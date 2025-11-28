@@ -23,6 +23,8 @@ public class User {
 
     private String avatarUrl;
 
+    private String password;
+
     // 数据库已配置 DEFAULT CURRENT_TIMESTAMP，插入时可为 null
     private LocalDateTime createdTime;
 }

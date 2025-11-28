@@ -5,24 +5,32 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytedance.entity.User;
 import com.bytedance.mapper.UserMapper;
 import com.bytedance.service.IUserService;
+import com.bytedance.utils.JwtUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
+    @Autowired
+    private JwtUtils jwtUtils;
+
     @Override
-    public User login(String username) {
-        // 简单模拟：如果用户存在就返回，不存在就注册
-        User user = this.getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
-//        User user = query().eq("username", username).one();
+    public String login(String username, String password) {
+        // 1. 查用户
+        User user = this.getOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, username));
+
         if (user == null) {
-            user = User.builder()
-                    .username(username)
-                    .avatarUrl("")
-                    .build();
-            save(user);
+            throw new RuntimeException("用户不存在");
         }
-        return user;
+        // 2. 校验密码 (为了演示这里是明文对比，实际应该用 BCryptPasswordEncoder)
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("密码错误");
+        }
+
+        // 3. 生成 Token
+        return jwtUtils.createToken(user.getUserId());
     }
 }
 

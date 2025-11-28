@@ -2,8 +2,10 @@ package com.bytedance.controller;
 
 import com.bytedance.common.Result;
 import com.bytedance.dto.MessageDTO;
+import com.bytedance.dto.SendMsgRequest;
 import com.bytedance.entity.Message;
 import com.bytedance.service.IMessageService;
+import com.bytedance.utils.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,21 +22,21 @@ public class MessageController {
      * 接口1：发送消息
      * URL: POST /api/messages/send
      */
+    // Controller 方法
     @PostMapping("/send")
-    public Result<Message> sendMessage(@RequestBody MessageDTO request) {
-        if (request.getConversationId() == null || request.getText() == null) {
-            return Result.fail("参数不完整");
-        }
+    public Result<Message> send(@RequestBody SendMsgRequest request) {
+        Long currentUserId = UserContext.getUserId();
 
-        // 调用 Service (这里暂时模拟当前用户是 request.getSenderId())
-        // senderId 应该从 Token 中获取
-        Message message = messageService.sendTextMsg(
+        // 简单的校验
+        if (request.getMsgType() == null) request.setMsgType(1); // 默认文本
+
+        Message msg = messageService.sendMessage(
                 request.getConversationId(),
-                request.getSenderId(),
-                request.getText()
+                currentUserId,
+                request.getMsgType(),
+                request.getContent()
         );
-
-        return Result.success(message);
+        return Result.success(msg);
     }
 
     /**

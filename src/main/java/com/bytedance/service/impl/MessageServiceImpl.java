@@ -27,62 +27,77 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     @Autowired
     private ConversationMemberMapper conversationMemberMapper;
 
+
     @Override
-    @Transactional(rollbackFor = Exception.class) // 开启事务：任何一步报错，全部回滚
-    public Message sendTextMsg(Long conversationId, Long senderId, String text) {
-        // 1. 悲观锁锁定会话
-        // SELECT * FROM conversations WHERE id = ? FOR UPDATE
-        // 这行代码会锁住该行记录，直到事务结束。防止多个人同时修改 seq。
+    @Transactional(rollbackFor = Exception.class)
+    public Message sendMessage(Long conversationId, Long senderId, Integer msgType, String contentJson) {
+        // 查询 conversation_member 表，看该用户是否在会话中
+        Long count = conversationMemberMapper.selectCount(
+                new LambdaQueryWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConversationId, conversationId)
+                        .eq(ConversationMember::getUserId, senderId)
+        );
+
+        if (count == null || count == 0) {
+            // 抛出异常，GlobalExceptionHandler 会捕获并返回给前端错误提示
+            throw new RuntimeException("您不是该会话成员，无法发送消息");
+        }
+
+        // 1. 锁会话 & 校验
         Conversation conversation = conversationMapper.selectOne(
                 new LambdaQueryWrapper<Conversation>()
                         .eq(Conversation::getConversationId, conversationId)
                         .last("FOR UPDATE")
         );
+        if (conversation == null) throw new RuntimeException("会话不存在");
 
-        if (conversation == null) {
-            throw new RuntimeException("会话不存在");
-        }
-
-        // 2. 生成新的 Seq
+        // 2. 生成 Seq
         long newSeq = conversation.getCurrentSeq() + 1;
 
-        // 3. 组装消息实体
+        // 3. 构建消息
         Message message = Message.builder()
                 .conversationId(conversationId)
                 .senderId(senderId)
-                .seq(newSeq) // 填入连续的序号
-                .msgType(1)  // 1代表文本
-                .content(JSONUtil.createObj().set("text", text).toString()) // Hutool 生成 JSON
+                .seq(newSeq)
+                .msgType(msgType)
+                .content(contentJson)
                 .createdTime(LocalDateTime.now())
                 .build();
 
-        // 4. 保存消息到 DB
         this.save(message);
 
-        // 5. 更新会话的最新状态 (Seq, LastMsg)
+        // 4. 更新会话摘要
         conversation.setCurrentSeq(newSeq);
-        conversation.setLastMsgContent(text);
         conversation.setLastMsgTime(LocalDateTime.now());
+
+        // 根据类型生成摘要
+        String summary = "[未知消息]";
+        if (msgType == 1) {
+            summary = JSONUtil.parseObj(contentJson).getStr("text");
+        } else if (msgType == 2) {
+            summary = "[图片]";
+        } else if (msgType == 5) {
+            summary = "[待办任务]"; // 为之后做准备
+        }
+        conversation.setLastMsgContent(summary);
         conversationMapper.updateById(conversation);
 
-        // 6. 更新群里其他成员的未读数 (调用 Mapper 中写的自定义 SQL)
+        // 5. 更新未读数
         conversationMemberMapper.incrementUnreadCount(conversationId, senderId);
 
-        // 7.实时推送
-        // 通知这个会话里的“其他成员”
-        // 7.1 找出群里除了我以外的所有人
+        // 6. 实时推送
+        // 6.1 找出群里除了我以外的所有人
         List<ConversationMember> members = conversationMemberMapper.selectList(
                 new LambdaQueryWrapper<ConversationMember>()
                         .eq(ConversationMember::getConversationId, conversationId)
         );
 
-        // 7.2 构建推送的 JSON 数据
-        // 推送完整消息，这样客户端收到后可以直接上屏，不用再查一次接口
+        // 6.2 构建推送 JSON
         String pushJson = JSONUtil.toJsonStr(message);
 
-        // 7.3 循环推送
+        // 6.3 循环推送
         for (ConversationMember member : members) {
-            // 排除自己 (自己发的没必要推给自己，或者推给自己用于多端同步，这里先排除)
+            // 排除自己
             if (!member.getUserId().equals(senderId)) {
                 WebSocketServer.pushMessage(member.getUserId(), pushJson);
             }
@@ -90,6 +105,15 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
         return message;
     }
+
+
+    // 保留旧接口兼容
+    @Override
+    public Message sendTextMsg(Long conversationId, Long senderId, String text) {
+        String json = JSONUtil.createObj().set("text", text).toString();
+        return sendMessage(conversationId, senderId, 1, json);
+    }
+
 
     @Override
     public List<Message> syncMessages(Long conversationId, Long afterSeq) {

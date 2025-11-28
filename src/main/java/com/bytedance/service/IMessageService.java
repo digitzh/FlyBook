@@ -15,6 +15,9 @@ public interface IMessageService extends IService<Message> {
      */
     Message sendTextMsg(Long conversationId, Long senderId, String text);
 
+    // 通用发送接口
+    Message sendMessage(Long conversationId, Long senderId, Integer msgType, String contentJson);
+
     // 拉取历史消息
     List<Message> syncMessages(Long conversationId, Long afterSeq);
 }

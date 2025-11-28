@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            WeComposeTheme {
+            WeComposeTheme(viewModel.theme) {
                 val navController = rememberNavController()
                 NavHost(navController, Home) {
                     composable<Home> {

@@ -34,7 +34,7 @@ fun ChatList(chats: List<Chat>, onChatClick: (Chat) -> Unit) {
   Column(Modifier
     .background(WeComposeTheme.colors.background)
     .fillMaxSize()) {
-    WeTopBar("扔信")
+    WeTopBar("Flybook")
     LazyColumn(Modifier.background(WeComposeTheme.colors.listItem)) {
       itemsIndexed(chats) { index, chat ->
         if (index > 0) {

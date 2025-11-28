@@ -53,8 +53,7 @@ class WeViewModel : ViewModel() {
   fun switchTheme() {
     theme = when (theme) {
       WeComposeTheme.Theme.Light -> WeComposeTheme.Theme.Dark;
-      WeComposeTheme.Theme.Dark -> WeComposeTheme.Theme.D
-      WeComposeTheme.Theme.D -> WeComposeTheme.Theme.Light
+      WeComposeTheme.Theme.Dark -> WeComposeTheme.Theme.Light
     }
   }
 

@@ -72,30 +72,6 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
             .background(WeComposeTheme.colors.chatPage)
             .weight(1f)
     ) {
-      Box(
-        Modifier
-          .alpha(WeComposeTheme.colors.chatPageBgAlpha)
-          .fillMaxSize()
-      ) {
-        Image(
-          painterResource(R.drawable.ic_bg_newyear_left), null,
-          Modifier
-            .align(Alignment.CenterStart)
-            .padding(bottom = 100.dp)
-        )
-        Image(
-          painterResource(R.drawable.ic_bg_newyear_top), null,
-          Modifier
-            .align(Alignment.TopEnd)
-            .padding(horizontal = 24.dp)
-        )
-        Image(
-          painterResource(R.drawable.ic_bg_newyear_right), null,
-          Modifier
-            .align(Alignment.BottomEnd)
-            .padding(vertical = 200.dp)
-        )
-      }
       val shakingOffset = remember { Animatable(0f) }
 //      LaunchedEffect(shakingTime) {
 //        if (shakingTime == -1) {
@@ -113,6 +89,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
       ) {
         items(chat.msgs.size) { index ->
           val msg = chat.msgs[index]
+            msg.apply { read = true }
           MessageItem(msg, shakingTime, chat.msgs.size - index - 1)
         }
       }
@@ -265,7 +242,7 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit) {
       cursorBrush = SolidColor(WeComposeTheme.colors.textPrimary)
     )
     Text(
-      "\uD83D\uDCA3",
+      "发送",
       Modifier
         .clickable{
             if (editingText.isNotBlank()) {
@@ -275,7 +252,7 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit) {
         }
         .padding(4.dp)
         .align(Alignment.CenterVertically),
-      fontSize = 24.sp
+      fontSize = 20.sp
     )
     Icon(
       painterResource(R.drawable.ic_add),

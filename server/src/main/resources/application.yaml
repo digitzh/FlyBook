@@ -1,0 +1,36 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: flybook
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/flybook?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+jackson:
+  default-property-inclusion: non_null
+
+mybatis-plus:
+  type-aliases-package: com.flybook.entity
+
+logging:
+  level:
+    com.bytedance: debug
+    org.springframework.web.socket: debug
+    org.springframework.web.socket.server: debug
+    javax.websocket: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+jwt:
+  secret: 0IjoxNzY0NDIxNjk3LCJleHAiOjE3NjUwMjY0OTd
+  expire-time: 604800000
+
+# 本地存储配置
+storage:
+  upload-path: D:/Sync/Codes/11-2025/FlyBook_env/FlyBook/imgs/
+  # 映射的访问前缀，即 http://localhost:8080/files/...
+  access-prefix: /files/
+  # 当前后端服务的地址，用于拼接完整URL
+  domain: http://localhost:8081

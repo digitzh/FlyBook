@@ -32,6 +32,7 @@ private val LightColorPalette = WeComposeColors(
     bubbleOthers = white1,
     textFieldBackground = white1,
     more = grey4,
+    redletter = red1,
     chatPageBgAlpha = 0f,
 )
 private val DarkColorPalette = WeComposeColors(
@@ -53,6 +54,7 @@ private val DarkColorPalette = WeComposeColors(
     bubbleOthers = black5,
     textFieldBackground = black7,
     more = grey5,
+    redletter = red1,
     chatPageBgAlpha = 0f,
 )
 
@@ -76,6 +78,7 @@ class WeComposeColors(
     val bubbleOthers: Color,
     val textFieldBackground: Color,
     val more: Color,
+    val redletter: Color,
     val chatPageBgAlpha: Float,
 )
 
@@ -130,6 +133,7 @@ fun WeComposeTheme(
         bubbleOthers = animateColorAsState(targetColors.bubbleOthers, tween(600)).value,
         textFieldBackground = animateColorAsState(targetColors.textFieldBackground, tween(600)).value,
         more = animateColorAsState(targetColors.more, tween(600)).value,
+        redletter = animateColorAsState(targetColors.redletter, tween(600)).value,
         chatPageBgAlpha = animateFloatAsState(targetColors.chatPageBgAlpha, tween(600)).value,
     )
 

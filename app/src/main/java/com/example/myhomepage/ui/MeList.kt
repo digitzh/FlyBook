@@ -4,6 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -124,7 +126,27 @@ fun MeListItem(
 }
 
 @Composable
-fun MeList() {
+fun LogoutItem(modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            painterResource(R.drawable.logout), "title", Modifier
+                .size(38.dp)
+                .padding(5.dp),
+            tint = WeComposeTheme.colors.redletter
+        )
+        Text(
+            "退出登录",
+            fontSize = 20.sp,
+            color = WeComposeTheme.colors.redletter
+        )
+    }
+}
+
+@Composable
+fun MeList(myLogout : () -> Unit) {
   Box(Modifier
     .background(WeComposeTheme.colors.background)
     .fillMaxSize()) {
@@ -152,14 +174,21 @@ fun MeList() {
           .height(8.dp)
       )
       MeListItem(R.drawable.ic_settings, "设置")
+      Spacer(
+        Modifier
+          .background(WeComposeTheme.colors.background)
+          .fillMaxWidth()
+          .height(300.dp)
+      )
+      LogoutItem(Modifier.clickable { myLogout() })
     }
   }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MeListPreview() {
-  WeComposeTheme {
-    MeList()
-  }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun MeListPreview() {
+//  WeComposeTheme {
+//    MeList(myLogout)
+//  }
+//}

@@ -18,6 +18,8 @@ import com.example.myhomepage.ui.ChatDetails
 import com.example.myhomepage.ui.ChatDetailsPage
 import com.example.myhomepage.ui.Home
 import com.example.myhomepage.ui.HomePage
+import com.example.myhomepage.ui.Login
+import com.example.myhomepage.ui.LoginPage
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.coroutines.launch
 
@@ -41,13 +43,20 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 NavHost(navController, Home) {
                     composable<Home> {
-                        HomePage(viewModel) { navController.navigate(ChatDetails(it.friend.id)) }
+                        HomePage(viewModel,
+                            { navController.navigate(ChatDetails(it.friend.id)) },
+                            {navController.navigate(Login)})
                     }
                     composable<ChatDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                     ) {
                         ChatDetailsPage(viewModel, it.toRoute<ChatDetails>().userId)
+                    }
+                    composable<Login> {
+                        LoginPage { password ->
+                            if (password.equals("123")) navController.navigate(Home)
+                        }
                     }
                 }
             }

@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 object Home
 
 @Composable
-fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit) {
+fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, myLogout: () -> Unit) {
     Column(Modifier
         .background(WeComposeTheme.colors.background)
         .statusBarsPadding()) {
@@ -28,7 +28,7 @@ fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit) {
             when (page) {
                 0 -> ChatList(viewModel.chats, onOpenChat)
                 1 -> TodoList(viewModel.contacts)
-                2 -> MeList()
+                2 -> MeList(myLogout)
             }
         }
         val scope = rememberCoroutineScope()

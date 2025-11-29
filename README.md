@@ -1,14 +1,10 @@
-## 主页设计
-主页主要分为聊天(即时通信)，代办事项，以及个人主页三个部分,有两种主题(浅色与深色)。
+# FlyBook
 
-<<<<<<< HEAD
-=======
 参考链接：[类飞书的 Android 办公应用开发 - 飞书文档](https://bytedance.larkoffice.com/wiki/ZchQw86ELicBrgkm9RMcuggYnyh)
 
 ## 主页设计
 主页主要分为聊天(即时通信)，代办事项，以及个人主页三个部分,有两种主题(浅色与深色)。
 
->>>>>>> 6b9f72bef64f9149428c83a6e6fbce908dae43a6
 <img src="README_IMG\\homepage.png" width="240px" height="528px">
 <img src="README_IMG\\homepage_black.png" width="240px" height="528px">
 
@@ -43,8 +39,14 @@
 <img src="README_IMG\\me_black.png" width="240px" height="528px">
 
 已实现功能
-<<<<<<< HEAD
 - 个人主页的展示功能
-=======
-- 个人主页的展示功能
->>>>>>> 6b9f72bef64f9149428c83a6e6fbce908dae43a6
+
+### 登录模块
+个人主页新增退出登录按钮
+用户点击退出登录按钮，可以跳转至登录界面，进行登录操作，密码正确(密码为123)则登录成功，跳转至主页。
+
+<img src="README_IMG\\login.png" width="240px" height="528px">
+
+已实现功能
+- 登录功能(未与后端交互数据)
+

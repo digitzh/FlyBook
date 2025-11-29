@@ -1,6 +1,14 @@
 ## 主页设计
 主页主要分为聊天(即时通信)，代办事项，以及个人主页三个部分,有两种主题(浅色与深色)。
 
+<<<<<<< HEAD
+=======
+参考链接：[类飞书的 Android 办公应用开发 - 飞书文档](https://bytedance.larkoffice.com/wiki/ZchQw86ELicBrgkm9RMcuggYnyh)
+
+## 主页设计
+主页主要分为聊天(即时通信)，代办事项，以及个人主页三个部分,有两种主题(浅色与深色)。
+
+>>>>>>> 6b9f72bef64f9149428c83a6e6fbce908dae43a6
 <img src="README_IMG\\homepage.png" width="240px" height="528px">
 <img src="README_IMG\\homepage_black.png" width="240px" height="528px">
 
@@ -35,4 +43,8 @@
 <img src="README_IMG\\me_black.png" width="240px" height="528px">
 
 已实现功能
+<<<<<<< HEAD
 - 个人主页的展示功能
+=======
+- 个人主页的展示功能
+>>>>>>> 6b9f72bef64f9149428c83a6e6fbce908dae43a6

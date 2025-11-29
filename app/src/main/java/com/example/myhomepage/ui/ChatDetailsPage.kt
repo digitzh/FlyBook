@@ -252,7 +252,8 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit) {
         }
         .padding(4.dp)
         .align(Alignment.CenterVertically),
-      fontSize = 20.sp
+      fontSize = 20.sp,
+      color = WeComposeTheme.colors.textPrimary
     )
     Icon(
       painterResource(R.drawable.ic_add),

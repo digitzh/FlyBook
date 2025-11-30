@@ -1,5 +1,8 @@
-# FlyBook
+# ToDoList
 
-参考链接：[类飞书的 Android 办公应用开发 - 飞书文档](https://bytedance.larkoffice.com/wiki/ZchQw86ELicBrgkm9RMcuggYnyh)
+第一次提交（基本功能实现）
+- 使用Gradle Kotlin DSL和版本目录配置项目结构
+- Domain层，包含`TodoTask`实体、`TodoRepository`接口及标准用例（保存、删除、观察、切换）
+- Data层，使用`MutableStateFlow`实现`InMemoryTodoRepository`仅在内存中短时储存
+- 简易的UI界面
 
-服务端接口参考：[FlyBook即时通信服务端(Apifox + WebSocket)](https://dcnihtjj5x0k.feishu.cn/wiki/K8mcwHGkai3Uxrkghvzc56GUnXg)

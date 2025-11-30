@@ -16,7 +16,17 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState
 
+//    fun loadMessages(conversationId: String) {
+//        repository.getMessages(conversationId).onEach { msgs ->
+//            _uiState.value = _uiState.value.copy(messages = msgs)
+//        }.launchIn(viewModelScope)
+//    }
     fun loadMessages(conversationId: String) {
+        viewModelScope.launch {
+            // 打开聊天页面 → 标记已读
+            repository.markConversationRead(conversationId)
+        }
+
         repository.getMessages(conversationId).onEach { msgs ->
             _uiState.value = _uiState.value.copy(messages = msgs)
         }.launchIn(viewModelScope)

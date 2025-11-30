@@ -40,7 +40,23 @@ class ChatRoomDataSource(private val dao: ChatDao) {
         }
     }
 
+//    suspend fun sendMessage(conversationId: String, content: String) {
+//        val message = MessageEntity(
+//            id = UUID.randomUUID().toString(),
+//            conversationId = conversationId,
+//            senderId = "me",
+//            content = content,
+//            timestamp = Date().time,
+//            isMine = true
+//        )
+//        dao.insertMessage(message)
+//
+//        // 更新会话最后消息
+//        val convList = dao.getConversations() // 这里可以用 suspend 读取
+//        // Room Flow 默认是异步，这里可以另外提供一个 suspend 方法读取当前会话
+//    }
     suspend fun sendMessage(conversationId: String, content: String) {
+        // 插入消息
         val message = MessageEntity(
             id = UUID.randomUUID().toString(),
             conversationId = conversationId,
@@ -52,8 +68,39 @@ class ChatRoomDataSource(private val dao: ChatDao) {
         dao.insertMessage(message)
 
         // 更新会话最后消息
-        val convList = dao.getConversations() // 这里可以用 suspend 读取
-        // Room Flow 默认是异步，这里可以另外提供一个 suspend 方法读取当前会话
+        val convs = dao.getConversationsList()
+        val existing = convs.find { it.id == conversationId }
+        if (existing != null) {
+            dao.updateConversation(
+                existing.copy(
+                    lastMessage = content,
+                    unreadCount = existing.unreadCount // 发送方未读数不变
+                )
+            )
+        }
+    }
+
+    /**
+     * 收到新消息（非自己发送）时调用
+     */
+    suspend fun receiveMessage(conversationId: String, content: String, senderId: String) {
+        val message = MessageEntity(
+            id = UUID.randomUUID().toString(),
+            conversationId = conversationId,
+            senderId = senderId,
+            content = content,
+            timestamp = Date().time,
+            isMine = false
+        )
+        dao.insertMessage(message)
+        dao.updateConversationOnNewMessage(conversationId, content)
+    }
+
+    /**
+     * 打开聊天页面，标记会话已读
+     */
+    suspend fun markConversationRead(conversationId: String) {
+        dao.markConversationAsRead(conversationId)
     }
 
     /**

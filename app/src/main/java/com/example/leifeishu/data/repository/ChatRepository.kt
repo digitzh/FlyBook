@@ -15,6 +15,12 @@ class ChatRepository(private val dataSource: ChatRoomDataSource) {
 
     suspend fun sendMessage(conversationId: String, content: String) =
         dataSource.sendMessage(conversationId, content)
+
+    // 新增: 会话列表的消息同步和未读计数功能
+    suspend fun markConversationRead(conversationId: String) = dataSource.markConversationRead(conversationId)
+
+    suspend fun receiveMessage(conversationId: String, content: String, senderId: String) =
+        dataSource.receiveMessage(conversationId, content, senderId)
 }
 // 替换
 //class ChatRepository(private val dataSource: ChatLocalDataSource) {

@@ -17,6 +17,8 @@ import com.example.leifeishu.ui.conversation.conversationList.ConversationListVi
 import com.example.leifeishu.ui.navigation.AppNavGraph
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.leifeishu.ui.contact.ContactListViewModel
+import androidx.compose.material.icons.filled.Person
 
 class MainActivity : ComponentActivity() {
 
@@ -28,6 +30,8 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val conversationListViewModel: ConversationListViewModel by viewModel()
             val chatViewModel: ChatViewModel by viewModel()
+            val contactListViewModel: ContactListViewModel by viewModel() // 新增
+
             var selectedTab by remember { mutableStateOf(0) }
 
             // 安全获取当前路由
@@ -37,13 +41,11 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 topBar = {
                     if (currentRoute == "conversationList") {
-                        CenterAlignedTopAppBar(
-                            title = { Text("类飞书") }
-                        )
+                        CenterAlignedTopAppBar(title = { Text("类飞书") })
                     }
                 },
                 bottomBar = {
-                    if (currentRoute == "conversationList") {
+                    if (currentRoute in listOf("conversationList", "contacts")) { // 可显示底栏
                         NavigationBar {
                             NavigationBarItem(
                                 selected = selectedTab == 0,
@@ -63,12 +65,30 @@ class MainActivity : ComponentActivity() {
                                 label = { Text("待办任务") },
                                 icon = { Icon(Icons.Default.List, contentDescription = null) }
                             )
+                            // 联系人导航栏
+                            NavigationBarItem(
+                                selected = selectedTab == 2,
+                                onClick = {
+                                    selectedTab = 2
+                                    navController.navigate("contacts") {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                label = { Text("联系人") },
+                                icon = { Icon(Icons.Default.Person, contentDescription = null) }
+                            )
                         }
                     }
                 }
             ) { innerPadding ->
                 Box(modifier = Modifier.padding(innerPadding)) {
-                    AppNavGraph(navController, conversationListViewModel, chatViewModel)
+                    AppNavGraph(
+                        navController,
+                        conversationListViewModel,
+                        chatViewModel,
+                        contactListViewModel // 传入
+                    )
                 }
             }
         }

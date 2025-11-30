@@ -5,16 +5,19 @@ import androidx.navigation.*
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
+import com.example.leifeishu.ui.contact.ContactListScreen
 import com.example.leifeishu.ui.conversation.chat.ChatScreen
 import com.example.leifeishu.ui.conversation.chat.ChatViewModel
 import com.example.leifeishu.ui.conversation.conversationList.ConversationListScreen
 import com.example.leifeishu.ui.conversation.conversationList.ConversationListViewModel
+import com.example.leifeishu.ui.contact.ContactListViewModel
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
     conversationListViewModel: ConversationListViewModel,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    contactListViewModel: ContactListViewModel  // 新增
 ) {
     NavHost(navController, startDestination = "conversationList") {
 
@@ -30,6 +33,11 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             ChatScreen(chatViewModel, backStackEntry, navController)
+        }
+
+        // ==================== 新增联系人页面 ====================
+        composable("contacts") {
+            ContactListScreen(contactListViewModel, navController)
         }
     }
 }

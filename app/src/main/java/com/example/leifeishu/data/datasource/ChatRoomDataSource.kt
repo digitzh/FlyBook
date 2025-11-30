@@ -116,8 +116,8 @@ class ChatRoomDataSource(private val dao: ChatDao) {
                 // 插入欢迎会话
                 val welcomeConv = ConversationEntity(
                     id = welcomeId,
-                    name = "系统消息",
-                    lastMessage = "欢迎使用类飞书聊天应用！",
+                    name = "类飞书团队",
+                    lastMessage = "欢迎回到类飞书！",
                     unreadCount = 1
                 )
                 dao.insertConversation(welcomeConv)
@@ -126,8 +126,8 @@ class ChatRoomDataSource(private val dao: ChatDao) {
                 val welcomeMsg = MessageEntity(
                     id = UUID.randomUUID().toString(),
                     conversationId = welcomeId,
-                    senderId = "system",
-                    content = "欢迎使用类飞书聊天应用！",
+                    senderId = "类飞书团队",
+                    content = "欢迎回到类飞书！",
                     timestamp = Date().time,
                     isMine = false
                 )
@@ -135,4 +135,6 @@ class ChatRoomDataSource(private val dao: ChatDao) {
             }
         }
     }
+
+
 }

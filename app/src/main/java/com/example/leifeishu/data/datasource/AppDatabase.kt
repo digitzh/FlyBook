@@ -4,11 +4,13 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.leifeishu.data.model.ConversationEntity
 import com.example.leifeishu.data.model.MessageEntity
+import com.example.leifeishu.data.model.Contact
 
 @Database(
-    entities = [ConversationEntity::class, MessageEntity::class],
-    version = 1
+    entities = [ConversationEntity::class, MessageEntity::class, Contact::class],
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun contactDao(): ContactDao
 }

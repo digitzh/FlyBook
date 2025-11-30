@@ -1,16 +1,13 @@
 package com.example.leifeishu.data.datasource
 
-import com.example.leifeishu.data.model.Conversation
-import com.example.leifeishu.data.model.Message
-import com.example.leifeishu.data.model.ConversationEntity
-import com.example.leifeishu.data.model.MessageEntity
+import com.example.leifeishu.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.*
 
-class ChatRoomDataSource(private val dao: ChatDao) {
+class ChatRoomDataSource(private val dao: ChatDao, private val contactDao: ContactDao) {
 
     fun getConversations(): Flow<List<Conversation>> {
         return dao.getConversations().map { list ->
@@ -40,23 +37,7 @@ class ChatRoomDataSource(private val dao: ChatDao) {
         }
     }
 
-//    suspend fun sendMessage(conversationId: String, content: String) {
-//        val message = MessageEntity(
-//            id = UUID.randomUUID().toString(),
-//            conversationId = conversationId,
-//            senderId = "me",
-//            content = content,
-//            timestamp = Date().time,
-//            isMine = true
-//        )
-//        dao.insertMessage(message)
-//
-//        // 更新会话最后消息
-//        val convList = dao.getConversations() // 这里可以用 suspend 读取
-//        // Room Flow 默认是异步，这里可以另外提供一个 suspend 方法读取当前会话
-//    }
     suspend fun sendMessage(conversationId: String, content: String) {
-        // 插入消息
         val message = MessageEntity(
             id = UUID.randomUUID().toString(),
             conversationId = conversationId,
@@ -67,22 +48,17 @@ class ChatRoomDataSource(private val dao: ChatDao) {
         )
         dao.insertMessage(message)
 
-        // 更新会话最后消息
         val convs = dao.getConversationsList()
         val existing = convs.find { it.id == conversationId }
         if (existing != null) {
             dao.updateConversation(
                 existing.copy(
-                    lastMessage = content,
-                    unreadCount = existing.unreadCount // 发送方未读数不变
+                    lastMessage = content
                 )
             )
         }
     }
 
-    /**
-     * 收到新消息（非自己发送）时调用
-     */
     suspend fun receiveMessage(conversationId: String, content: String, senderId: String) {
         val message = MessageEntity(
             id = UUID.randomUUID().toString(),
@@ -96,24 +72,20 @@ class ChatRoomDataSource(private val dao: ChatDao) {
         dao.updateConversationOnNewMessage(conversationId, content)
     }
 
-    /**
-     * 打开聊天页面，标记会话已读
-     */
     suspend fun markConversationRead(conversationId: String) {
         dao.markConversationAsRead(conversationId)
     }
 
     /**
-     * 初始化系统欢迎会话
+     * 初始化系统欢迎会话，同时生成对应联系人
      */
     suspend fun initWelcomeConversation() {
         withContext(Dispatchers.IO) {
-            // 检查数据库中是否存在该会话
-            val existingConvs = dao.getConversationsList() // 这里需要一个 suspend 查询所有会话的方法
             val welcomeId = "welcome"
 
+            // 会话不存在就创建
+            val existingConvs = dao.getConversationsList()
             if (existingConvs.none { it.id == welcomeId }) {
-                // 插入欢迎会话
                 val welcomeConv = ConversationEntity(
                     id = welcomeId,
                     name = "类飞书团队",
@@ -122,7 +94,6 @@ class ChatRoomDataSource(private val dao: ChatDao) {
                 )
                 dao.insertConversation(welcomeConv)
 
-                // 插入欢迎消息
                 val welcomeMsg = MessageEntity(
                     id = UUID.randomUUID().toString(),
                     conversationId = welcomeId,
@@ -133,8 +104,18 @@ class ChatRoomDataSource(private val dao: ChatDao) {
                 )
                 dao.insertMessage(welcomeMsg)
             }
+
+            // 联系人表里也要有对应的联系人
+            val existingContact = contactDao.getContactById(welcomeId)
+            if (existingContact == null) {
+                val contact = Contact(
+                    id = welcomeId,
+                    name = "类飞书团队",
+                    avatarUrl = null,
+                    lastChatId = welcomeId
+                )
+                contactDao.insert(contact)
+            }
         }
     }
-
-
 }

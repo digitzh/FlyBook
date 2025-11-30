@@ -3,20 +3,25 @@ package com.example.leifeishu.ui.conversation.chat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import com.example.leifeishu.data.model.Message
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.text.input.ImeAction
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,31 +47,34 @@ fun ChatScreen(
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回")
                     }
-                } ,
-//                modifier = Modifier.height(36.dp)  // 自定义高度
+                }
             )
         },
-        bottomBar = { /* 聊天页隐藏底部导航 */ }
+        bottomBar = { /* 底部导航隐藏 */ }
     ) { innerPadding ->
+
         Column(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
 
+            // 消息列表
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(8.dp)
-                    .imePadding()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .imePadding(),
+                reverseLayout = false // 最新消息在下
             ) {
                 items(state.messages) { msg ->
                     MessageItem(msg)
                 }
             }
 
+            // 输入栏
             Row(
-                Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -74,9 +82,14 @@ fun ChatScreen(
                 OutlinedTextField(
                     value = messageText,
                     onValueChange = { messageText = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 56.dp, max = 150.dp),
                     placeholder = { Text("请输入消息…") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    maxLines = 5,
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        imeAction = ImeAction.Send
+                    ),
                     keyboardActions = KeyboardActions(
                         onSend = {
                             if (messageText.isNotBlank()) {
@@ -86,15 +99,15 @@ fun ChatScreen(
                         }
                     )
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
-                Button(onClick = {
-                    if (messageText.isNotBlank()) {
-                        viewModel.sendMessage(conversationId, messageText)
-                        messageText = ""
+                Button(
+                    onClick = {
+                        if (messageText.isNotBlank()) {
+                            viewModel.sendMessage(conversationId, messageText)
+                            messageText = ""
+                        }
                     }
-                }) {
+                ) {
                     Text("发送")
                 }
             }
@@ -104,17 +117,38 @@ fun ChatScreen(
 
 @Composable
 fun MessageItem(msg: Message) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (msg.isMine) Arrangement.End else Arrangement.Start
+    val bubbleColor = if (msg.isMine) MaterialTheme.colorScheme.primaryContainer
+    else MaterialTheme.colorScheme.secondaryContainer
+
+    val textColor = if (msg.isMine) MaterialTheme.colorScheme.onPrimaryContainer
+    else MaterialTheme.colorScheme.onSecondaryContainer
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        horizontalAlignment = if (msg.isMine) Alignment.End else Alignment.Start
     ) {
         Surface(
-            color = if (msg.isMine) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.secondaryContainer,
-            shape = MaterialTheme.shapes.medium
+            shape = RoundedCornerShape(12.dp),
+            color = bubbleColor,
+            shadowElevation = 4.dp,
+            modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            Text(msg.content, modifier = Modifier.padding(12.dp))
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                Text(text = msg.content, color = textColor, fontSize = 16.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatTime(msg.timestamp),
+                    fontSize = 10.sp,
+                    color = textColor.copy(alpha = 0.6f)
+                )
+            }
         }
     }
-    Spacer(Modifier.height(4.dp))
+}
+
+fun formatTime(timestamp: Date): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(timestamp)
 }

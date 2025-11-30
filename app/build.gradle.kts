@@ -76,6 +76,7 @@ dependencies {
 
     // 协程
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation(libs.androidx.compose.ui.text)
 
     // 测试（可选）
     testImplementation("junit:junit:4.13.2")

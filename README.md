@@ -24,13 +24,18 @@
 - 我方新发送消息展示(仅是在前端实现，未与后端交互)
 
 ### 待办事项板块
-可以分类展示待办事项(主要分为文件，通知，事务三类)，若完成事项则不再展示。
+可以分类展示待办事项(主要分为文件，通知，事务，其他四类，不同事务按照颜色区分)，点击可进入详情页，详情页中的按钮"标记为已完成"，点击可修改状态。
 
 <img src="README_IMG\\todolist.png" width="240px" height="528px">
 <img src="README_IMG\\todolist_black.png" width="240px" height="528px">
 
+<img src="README_IMG\\tododetails.png" width="240px" height="528px">
+<img src="README_IMG\\tododetails_black.png" width="240px" height="528px">
+<img src="README_IMG\\tododetails_done.png" width="240px" height="528px">
+
 已实现功能
 - 待办事项的分类展示
+- 待办事项详情页与确认完成功能
 
 ### 个人主页模块
 主要提供用户的基本信息，以及个人账户的设置模块等。

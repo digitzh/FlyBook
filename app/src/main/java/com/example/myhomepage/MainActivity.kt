@@ -20,6 +20,8 @@ import com.example.myhomepage.ui.Home
 import com.example.myhomepage.ui.HomePage
 import com.example.myhomepage.ui.Login
 import com.example.myhomepage.ui.LoginPage
+import com.example.myhomepage.ui.TodoDetails
+import com.example.myhomepage.ui.TodoDetailsPage
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.coroutines.launch
 
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
                     composable<Home> {
                         HomePage(viewModel,
                             { navController.navigate(ChatDetails(it.friend.id)) },
+                            {navController.navigate(TodoDetails(it.id))},
                             {navController.navigate(Login)})
                     }
                     composable<ChatDetails>(
@@ -52,6 +55,12 @@ class MainActivity : ComponentActivity() {
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                     ) {
                         ChatDetailsPage(viewModel, it.toRoute<ChatDetails>().userId)
+                    }
+                    composable<TodoDetails>(
+                        enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                        exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+                    ) {
+                        TodoDetailsPage(viewModel, it.toRoute<TodoDetails>().todoId)
                     }
                     composable<Login> {
                         LoginPage { password ->

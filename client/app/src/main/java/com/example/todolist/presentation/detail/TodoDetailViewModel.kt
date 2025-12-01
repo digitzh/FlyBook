@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.todolist.ui.theme.TodoType
 
 /**
  * 待办详情页（新建 & 编辑共用）的 ViewModel。
@@ -29,6 +30,7 @@ class TodoDetailViewModel(
         val description: String = "",
         val deadline: String = "",     // 简化：用字符串存 yyyy-MM-dd
         val isCompleted: Boolean = false,
+        val type: TodoType = TodoType.OTHER,  //当前选择的任务类型，默认 OTHER
         val isNewTask: Boolean = true,
         val isLoading: Boolean = false,
         val isSaving: Boolean = false,
@@ -59,6 +61,7 @@ class TodoDetailViewModel(
                             description = task.description,
                             deadline = task.deadline.orEmpty(),
                             isCompleted = task.isCompleted,
+                            type = task.type,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -79,6 +82,10 @@ class TodoDetailViewModel(
 
     fun onTitleChange(newTitle: String) {
         _uiState.update { it.copy(title = newTitle) }
+    }
+
+    fun onTypeChange(newType: TodoType) {
+        _uiState.update { it.copy(type = newType) }
     }
 
     fun onDescriptionChange(newDescription: String) {
@@ -121,7 +128,8 @@ class TodoDetailViewModel(
                     title = current.title.trim(),
                     description = current.description.trim(),
                     deadline = current.deadline.takeIf { it.isNotBlank() },
-                    isCompleted = current.isCompleted
+                    isCompleted = current.isCompleted,
+                    type = current.type
                 )
 
                 saveTodoUseCase(todo)

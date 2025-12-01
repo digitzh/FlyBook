@@ -1,5 +1,9 @@
 package com.example.todolist.domain.model
 
+import com.example.todolist.ui.theme.TodoType
+
+
+
 /**
  * Domain层待办任务实体
  *
@@ -11,6 +15,6 @@ data class TodoTask(
     val title: String,         // 任务标题（主题）
     val description: String,   // 任务描述
     val deadline: String?,     // 截止日期，格式如 "2025-12-31"，可为空
-    //val group: String,         // 任务分组暂未实现
+    val type: TodoType,         // 任务类型
     val isCompleted: Boolean   // 是否完成
 )

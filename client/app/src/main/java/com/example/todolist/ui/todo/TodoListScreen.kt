@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.todolist.domain.model.TodoTask
 import com.example.todolist.presentation.list.TodoListViewModel
@@ -104,7 +105,19 @@ fun TodoListScreen(
             }
         }
     }
+
+//    // 把真正的 UI 渲染委托给一个“无状态”的版本，方便 Preview 复用
+//    TodoListScreenStateless(
+//        uiState = uiState,
+//        onItemClick = onItemClick,
+//        onAddClick = onAddClick,
+//        onToggleCompleted = { id -> viewModel.onToggleCompleted(id) },
+//        onDeleteClick = { id -> viewModel.onDeleteTodo(id) },
+//        onErrorShown = { viewModel.onErrorShown() }
+//    )
+
 }
+
 
 /**
  * 单条待办在列表中的展示。
@@ -172,3 +185,139 @@ private fun TodoListItem(
         }
     }
 }
+
+
+
+///**
+// * 无状态版本：只依赖传入的 UiState 和回调，不关心 ViewModel
+// * Preview 就是直接调这个
+// */
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//private fun TodoListScreenStateless(
+//    uiState: TodoListViewModel.UiState,
+//    onItemClick: (Long) -> Unit,
+//    onAddClick: () -> Unit,
+//    onToggleCompleted: (Long) -> Unit,
+//    onDeleteClick: (Long) -> Unit,
+//    onErrorShown: () -> Unit
+//) {
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = { Text("待办任务") }
+//            )
+//        },
+//        floatingActionButton = {
+//            FloatingActionButton(onClick = onAddClick) {
+//                Text("+")
+//            }
+//        }
+//    ) { padding ->
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(padding)
+//        ) {
+//            when {
+//                uiState.isLoading -> {
+//                    CircularProgressIndicator(
+//                        modifier = Modifier.align(Alignment.Center)
+//                    )
+//                }
+//
+//                uiState.todos.isEmpty() -> {
+//                    Text(
+//                        text = "暂无待办任务，点击右下角 + 新建",
+//                        modifier = Modifier.align(Alignment.Center)
+//                    )
+//                }
+//
+//                else -> {
+//                    LazyColumn(
+//                        modifier = Modifier.fillMaxSize(),
+//                        contentPadding = PaddingValues(16.dp),
+//                        verticalArrangement = Arrangement.spacedBy(8.dp)
+//                    ) {
+//                        items(uiState.todos) { todo ->
+//                            TodoListItem(
+//                                task = todo,
+//                                onClick = { onItemClick(todo.id) },
+//                                onToggleCompleted = { onToggleCompleted(todo.id) },
+//                                onDeleteClick = { onDeleteClick(todo.id) }
+//                            )
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // 这里为了简单预览，不用真正的 SnackbarHostState，
+//            // 只要能看到界面的基本样子就行
+//            uiState.errorMessage?.let { message ->
+//                Surface(
+//                    tonalElevation = 4.dp,
+//                    modifier = Modifier
+//                        .align(Alignment.BottomCenter)
+//                        .padding(16.dp)
+//                ) {
+//                    Row(
+//                        modifier = Modifier
+//                            .padding(horizontal = 16.dp, vertical = 8.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Text(
+//                            text = message,
+//                            style = MaterialTheme.typography.bodyMedium,
+//                            modifier = Modifier.weight(1f)
+//                        )
+//                        TextButton(onClick = onErrorShown) {
+//                            Text("知道了")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+//
+///**
+// * 预览：这里不用 ViewModel，只造一份假的 UiState
+// */
+//@Preview(showBackground = true)
+//@Composable
+//fun TodoListScreenPreview() {
+//    // 几条假数据
+//    val sampleTodos = listOf(
+//        TodoTask(
+//            id = 1L,
+//            title = "完成课程作业",
+//            description = "把待办任务模块的客户端部分写完并提交",
+//            deadline = "2025-12-01",
+//            isCompleted = false
+//        ),
+//        TodoTask(
+//            id = 2L,
+//            title = "组会讨论",
+//            description = "和同组同学讨论后端接口和数据格式",
+//            deadline = "2025-12-02",
+//            isCompleted = true
+//        )
+//    )
+//
+//    val fakeState = TodoListViewModel.UiState(
+//        isLoading = false,
+//        todos = sampleTodos,
+//        errorMessage = null
+//    )
+//
+//    MaterialTheme {
+//        TodoListScreenStateless(
+//            uiState = fakeState,
+//            onItemClick = {},
+//            onAddClick = {},
+//            onToggleCompleted = {},
+//            onDeleteClick = {},
+//            onErrorShown = {}
+//        )
+//    }
+//}

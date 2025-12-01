@@ -11,6 +11,14 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
+
+enum class TodoType {
+    FILE,    // 文件
+    CONF,    // 会议
+    MSG,   // 通知
+    OTHER    // 其他
+}
+
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,

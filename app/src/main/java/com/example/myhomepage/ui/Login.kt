@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.example.myhomepage.R
 import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.User
+import com.example.myhomepage.network.WebSocketManager
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.serialization.Serializable
 
@@ -59,7 +60,7 @@ fun LoginPage(onLoginClick : (String) -> Unit){
         .statusBarsPadding()
     ) {
         val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-        WeTopBar("Flybook") { backDispatcher?.onBackPressed() }
+        WeTopBar("Flybook", onBack = { backDispatcher?.onBackPressed() })
 
         Image(painterResource(id = R.drawable.icon), contentDescription = "Icon",
             modifier = Modifier.size(150.dp))
@@ -105,6 +106,7 @@ fun MeMessagesItem(){
 
 @Composable
 fun LoginItem(onLoginClick : (String) -> Unit){
+    var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -117,15 +119,18 @@ fun LoginItem(onLoginClick : (String) -> Unit){
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 用户名展示框（模拟输入框样式，不可编辑）
+            // 用户ID输入框（可编辑）
             OutlinedTextField(
-                value = User.Me.name, // 【填已获取的用户名】
-                onValueChange = {}, // 空实现：禁止编辑
-                readOnly = true, // 只读（保留输入框样式）
-                label = { Text("用户名", color = WeComposeTheme.colors.meList) },
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("用户ID", color = WeComposeTheme.colors.meList) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                enabled = false // 禁用输入（可选：与readOnly配合增强效果）
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = WeComposeTheme.colors.textPrimary,
+                    unfocusedTextColor = WeComposeTheme.colors.textSecondary
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -144,7 +149,7 @@ fun LoginItem(onLoginClick : (String) -> Unit){
 
             // 登录按钮
             Button(
-                onClick = { onLoginClick(password) },
+                onClick = { onLoginClick(userId) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -152,7 +157,8 @@ fun LoginItem(onLoginClick : (String) -> Unit){
                     containerColor = WeComposeTheme.colors.meList, // 按钮深蓝色背景
                     contentColor = WeComposeTheme.colors.textFieldBackground // 文字白色
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                enabled = userId.isNotBlank()
             ) {
                 Text(text = "登录", fontSize = 16.sp)
             }

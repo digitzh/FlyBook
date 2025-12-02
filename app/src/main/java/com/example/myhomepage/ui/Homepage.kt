@@ -26,7 +26,7 @@ fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, myLogout: () ->
         val pagerState = rememberPagerState { 3 }
         HorizontalPager(pagerState, Modifier.weight(1f)) { page ->
             when (page) {
-                0 -> ChatList(viewModel.chats, onOpenChat)
+                0 -> ChatList(viewModel.chats, onOpenChat, viewModel)
                 1 -> TodoList(viewModel.contacts)
                 2 -> MeList(myLogout)
             }

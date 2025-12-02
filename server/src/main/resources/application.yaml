@@ -27,6 +27,10 @@ jwt:
   secret: 0IjoxNzY0NDIxNjk3LCJleHAiOjE3NjUwMjY0OTd
   expire-time: 604800000
 
+# 认证配置
+auth:
+  enabled: false  # 是否启用登录系统，设置为 false 时关闭登录验证，请求中附带 userId 即可
+
 # 本地存储配置
 storage:
   upload-path: D:/Sync/Codes/11-2025/FlyBook_env/FlyBook/imgs/

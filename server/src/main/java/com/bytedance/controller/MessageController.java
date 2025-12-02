@@ -26,7 +26,8 @@ public class MessageController {
     // Controller 方法
     @PostMapping("/send")
     public Result<Message> send(@RequestBody SendMsgRequest request) {
-        Long currentUserId = UserContext.getUserId();
+        // 获取用户ID，优先使用请求体中的 userId，否则使用 UserContext 中的
+        Long currentUserId = getUserId(request.getUserId());
 
         // 简单的校验
         if (request.getMsgType() == null) request.setMsgType(1); // 默认文本
@@ -64,6 +65,22 @@ public class MessageController {
     ) {
         List<Message> messages = messageService.syncMessages(conversationId, afterSeq);
         return Result.success(messages);
+    }
+
+    /**
+     * 获取用户ID，优先级：请求体中的 userId > UserContext 中的 userId
+     */
+    private Long getUserId(Long requestBodyUserId) {
+        // 如果请求体中提供了 userId，优先使用
+        if (requestBodyUserId != null) {
+            return requestBodyUserId;
+        }
+        // 否则使用 UserContext 中的 userId（由拦截器设置）
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            throw new RuntimeException("无法获取用户ID，请提供 userId");
+        }
+        return userId;
     }
 }
 

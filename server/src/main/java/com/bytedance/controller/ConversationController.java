@@ -24,8 +24,8 @@ public class ConversationController {
      */
     @GetMapping("/list")
     public Result<List<ConversationVO>> getList() {
-        // 在真实项目中，userId 应该从 Token 中解析，而不是前端传
-        List<ConversationVO> list = conversationService.getConversationList(UserContext.getUserId());
+        Long userId = getUserId();
+        List<ConversationVO> list = conversationService.getConversationList(userId);
         return Result.success(list);
     }
 
@@ -34,7 +34,10 @@ public class ConversationController {
      */
     @PostMapping("/create")
     public Result<Long> create(@RequestBody ConversationDTO request) {
-        long id = conversationService.createConversation(request.getName(), request.getType(), UserContext.getUserId());
+        Long userId = getUserId(request.getUserId());
+        // 如果请求体中提供了 ownerId，使用它；否则使用当前用户ID
+        Long ownerId = request.getOwnerId() != null ? request.getOwnerId() : userId;
+        long id = conversationService.createConversation(request.getName(), request.getType(), ownerId);
         return Result.success(id);
     }
 
@@ -44,12 +47,36 @@ public class ConversationController {
      */
     @PostMapping("/members/add")
     public Result<Void> addMembers(@RequestBody AddMemberRequest request) {
+        Long userId = getUserId(request.getInviterId());
         conversationService.addMembers(
                 request.getConversationId(),
                 request.getTargetUserIds(),
-                UserContext.getUserId()
+                userId
         );
         return Result.success();
+    }
+
+    /**
+     * 获取用户ID，优先使用请求体中的 userId，否则使用 UserContext 中的
+     */
+    private Long getUserId() {
+        return getUserId(null);
+    }
+
+    /**
+     * 获取用户ID，优先级：请求体中的 userId > UserContext 中的 userId
+     */
+    private Long getUserId(Long requestBodyUserId) {
+        // 如果请求体中提供了 userId，优先使用
+        if (requestBodyUserId != null) {
+            return requestBodyUserId;
+        }
+        // 否则使用 UserContext 中的 userId（由拦截器设置）
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            throw new RuntimeException("无法获取用户ID，请提供 userId");
+        }
+        return userId;
     }
 }
 

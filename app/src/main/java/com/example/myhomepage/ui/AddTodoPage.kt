@@ -77,7 +77,7 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
     ) {
         // 标题
         val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-        WeTopBar("增加待办"){ backDispatcher?.onBackPressed() }
+        WeTopBar("增加待办", onBack = { backDispatcher?.onBackPressed() })
 
         // 卡片容器（主体内容）
         val CardBg = null

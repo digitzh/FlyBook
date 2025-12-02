@@ -57,7 +57,7 @@ fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
             .statusBarsPadding()
     ) {
         val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-        WeTopBar(affair.title) { backDispatcher?.onBackPressed() }
+        WeTopBar(affair.title, onBack = { backDispatcher?.onBackPressed() })
 
         Row (
             modifier = Modifier.fillMaxWidth(),

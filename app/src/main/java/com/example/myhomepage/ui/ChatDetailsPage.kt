@@ -66,7 +66,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
           .statusBarsPadding()
   ) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-    WeTopBar(chat.friend.name) { backDispatcher?.onBackPressed() }
+    WeTopBar(chat.friend.name, onBack = { backDispatcher?.onBackPressed() })
     Box(
         Modifier
             .background(WeComposeTheme.colors.chatPage)

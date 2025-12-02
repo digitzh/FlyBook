@@ -24,7 +24,12 @@ import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
-fun WeTopBar(title: String, onBack: (() -> Unit)? = null) {
+fun WeTopBar(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    onLeftAction: (() -> Unit)? = null,
+    leftActionIcon: Int? = null
+) {
   val viewModel: WeViewModel = viewModel(LocalActivity.current as ViewModelStoreOwner)
   Box(Modifier.background(WeComposeTheme.colors.background).fillMaxWidth()) {
     Row(Modifier.height(40.dp)
@@ -35,6 +40,17 @@ fun WeTopBar(title: String, onBack: (() -> Unit)? = null) {
           null,
           Modifier
             .clickable(onClick = onBack)
+            .align(Alignment.CenterVertically)
+            .size(36.dp)
+            .padding(8.dp),
+          tint = WeComposeTheme.colors.icon
+        )
+      } else if (onLeftAction != null && leftActionIcon != null) {
+        Icon(
+          painterResource(leftActionIcon),
+          null,
+          Modifier
+            .clickable(onClick = onLeftAction)
             .align(Alignment.CenterVertically)
             .size(36.dp)
             .padding(8.dp),

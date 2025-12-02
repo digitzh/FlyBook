@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -15,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.myhomepage.ui.AddTodoPage
 
+import com.example.myhomepage.network.WebSocketManager
 import com.example.myhomepage.ui.ChatDetails
 import com.example.myhomepage.ui.ChatDetailsPage
 import com.example.myhomepage.ui.Home
@@ -45,8 +47,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeComposeTheme(viewModel.theme) {
                 val navController = rememberNavController()
-                NavHost(navController, Home) {
+                NavHost(navController, Login) {
                     composable<Home> {
+                        // 进入主页时刷新会话列表
+                        LaunchedEffect(Unit) {
+                            viewModel.refreshConversationList()
+                        }
                         HomePage(viewModel,
                             { navController.navigate(ChatDetails(it.friend.id)) },
                             {navController.navigate(TodoDetails(it.id))},
@@ -69,8 +75,15 @@ class MainActivity : ComponentActivity() {
                         AddTodoPage(viewModel){}
                     }
                     composable<Login> {
-                        LoginPage { password ->
-                            if (password.equals("123")) navController.navigate(Home)
+                        LoginPage { userId ->
+                            // 设置当前用户ID并加载用户信息
+                            lifecycleScope.launch {
+                                viewModel.setCurrentUserIdAndLoadUser(userId)
+                                // 建立WebSocket连接
+                                WebSocketManager.getInstance().connect(userId)
+                                // 登录成功后跳转到主页
+                                navController.navigate(Home)
+                            }
                         }
                     }
                 }

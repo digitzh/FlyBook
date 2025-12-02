@@ -1,0 +1,240 @@
+**项目结构（更新版）**
+
+com.example.flybook
+
+	|——database
+
+	|			|——AppDatabase
+
+	|			|——ChatDao
+
+	|			|——ConversationEntity
+
+	|			|——ConversationMemberEntity
+
+	|			|——ConversationWithMembers
+
+	|			|——ConversationWithMessages
+
+	|			|——MessageEntity
+
+	|——model
+
+	|			 |——Conversation
+
+	|			 |——Message
+
+	|			 |——User
+
+	|——ui
+
+	|			|——chat
+
+	|						|——ChatScreen
+
+	|						|——MessageItem
+
+	|			|——contact
+
+	|						|——ContactDialog
+
+	|						|——GroupNameDialog
+
+	|			|——home
+
+	|						|——HomeScreen
+
+	|——theme
+
+	|			 |——Color
+
+	|			 |——Theme
+
+	|			 |——Type
+
+	|——viewmodel
+
+	|			 |——ChatViewModel
+
+	|			 |——ChatViewModelFactory
+
+	|			 |——HomeViewModel
+
+	|			 |——HomeViewModelFactory
+
+	|——MainActivity
+
+------
+
+**文件说明（更新版）**
+
+**com.example.flybook.model**
+
+1. **Conversation.kt**
+
+   - 表示一个会话（群聊）。
+
+   - 字段：
+
+     | 字段                    | 含义                                                         |
+     | ----------------------- | ------------------------------------------------------------ |
+     | `id: Long`              | 会话唯一 ID（用于导航参数、区分不同聊天）                    |
+     | `name: String`          | 会话名称（群聊名称）                                         |
+     | `members: List`         | 群成员列表                                                   |
+     | `messages: MutableList` | 会话内消息列表，UI 可临时使用，但实际数据由 ChatViewModel 管理 |
+
+2. **Message.kt**
+
+   - 表示单条消息。
+
+   - 字段：
+
+     | 字段      | 含义         |
+     | --------- | ------------ |
+     | id        | 消息唯一标识 |
+     | senderId  | 发送者 ID    |
+     | content   | 文本内容     |
+     | timestamp | 发送时间戳   |
+
+3. **User.kt**
+
+   - 表示用户。
+
+   - 字段：
+
+     | 字段      | 含义        |
+     | --------- | ----------- |
+     | id        | 用户唯一 ID |
+     | username  | 用户名      |
+     | avatarUrl | 头像 URL    |
+
+------
+
+**com.example.flybook.ui.chat**
+
+1. **ChatScreen.kt**
+   - 聊天界面 UI。
+   - 功能：
+     - 根据 conversationId 显示对应消息。
+     - 消息列表通过 ChatViewModel 管理。
+     - 输入框 + 发送按钮。
+     - TopAppBar 居中标题，左侧返回按钮。
+2. **MessageItem.kt**
+   - 渲染单条消息。
+   - 特性：
+     - 自己消息靠右、绿色背景。
+     - 他人消息靠左、白色背景。
+
+------
+
+**com.example.flybook.ui.contact**
+
+1. **ContactDialog.kt**
+   - 弹窗：选择联系人创建群聊。
+   - 功能：
+     - 展示联系人列表，可多选。
+     - 点击“创建群聊”时：
+       - 若选中总人数为 2（自己 + 对方），直接创建 1 对 1 会话。
+       - 若人数 >2，生成默认群聊名（选中用户名组合）并弹出 **GroupNameDialog**。
+2. **GroupNameDialog.kt**
+   - 弹窗：输入群聊名称。
+   - 功能：
+     - 显示默认群聊名，允许修改。
+     - 确认后调用回调 onConfirm(groupName) 创建会话。
+
+------
+
+**com.example.flybook.ui.home**
+
+1. **HomeScreen.kt**
+   - 首页 UI。
+   - 功能：
+     - 展示会话列表，点击进入 ChatScreen。
+     - 管理联系人选择弹窗与群聊名称弹窗。
+     - 新建群聊流程：
+       1. 打开 ContactDialog 选择联系人。
+       2. 如果 1 对 1，直接调用 `createOrGetConversation()` 创建会话。
+       3. 如果群聊，生成默认群名（自己不用显示），弹出 GroupNameDialog。
+       4. 用户确认群名后创建会话。
+       5. 通过 `_createdConversationId` 自动跳转到 ChatScreen。
+     - **新增**：使用 StateFlow `_createdConversationId` 监听新建会话，确保跳转安全且可复用。
+
+------
+
+**com.example.flybook.viewmodel**
+
+1. **ChatViewModel**
+
+   - 管理消息列表，每个 conversationId 单独存储。
+
+   - 方法：
+
+     | 函数                       | 作用                        |
+     | -------------------------- | --------------------------- |
+     | `getMessages(id)`          | 获取指定会话的消息列表      |
+     | `sendMessage(id, message)` | 向指定会话发送消息并更新 UI |
+     | `loadMessages(id)`         | 从数据库加载历史消息        |
+
+2. **HomeViewModel**
+
+   - 管理首页状态和会话列表。
+
+   - 字段：
+
+     | 字段                     | 作用                           |
+     | ------------------------ | ------------------------------ |
+     | `showContactDialog`      | 控制联系人弹窗                 |
+     | `contacts`               | 联系人列表                     |
+     | `selectedContacts`       | 选中的联系人列表               |
+     | `showGroupNameDialog`    | 控制群聊命名弹窗               |
+     | `newGroupName`           | 临时群聊名                     |
+     | `conversations`          | 首页会话列表                   |
+     | `_createdConversationId` | StateFlow，通知 UI 新建会话 ID |
+
+   - 方法：
+
+     - `createOrGetConversation(groupName)`：创建或获取已有会话，并更新 `_createdConversationId`。
+     - `resetCreatedConversationId()`：重置 Flow，避免重复跳转。
+
+3. **ChatViewModelFactory / HomeViewModelFactory**
+
+   - 用于 ViewModel 创建，注入 ChatDao。
+
+------
+
+**com.example.flybook.theme**
+
+1. **Color.kt / Type.kt / Theme.kt**
+   - 定义应用颜色、字体和 Material3 主题。
+   - 与 UI 组件统一风格和样式。
+
+------
+
+**com.example.flybook.database**
+
+1. **AppDatabase.kt**
+   - Room 数据库，包含会话、消息和会话成员表。
+   - `chatDao()` 提供访问 Dao。
+2. **ChatDao.kt**
+   - 数据访问接口：
+     - `getAllConversations()`：获取所有会话及其消息。
+     - `getConversation(id)`：获取指定会话消息。
+     - `insertConversation() / insertMessage()`：插入数据。
+   - **注意**：原代码缺少 `insertMembers()`，需补充。
+3. **ConversationEntity.kt / MessageEntity.kt / ConversationMemberEntity.kt / ConversationWithMembers.kt / ConversationWithMessages.kt**
+   - 数据库实体和关系模型，支持 Room 注解和一对多关联。
+
+------
+
+**com.example.flybook.MainActivity**
+
+- App 入口。
+- 功能：
+  - 初始化 Room 数据库。
+  - 创建 NavController。
+  - 初始化 HomeViewModel 和 ChatViewModel。
+  - 注册 NavHost 路由：
+    - `"home"` → HomeScreen
+    - `"chat/{conversationId}/{groupName}"` → ChatScreen（加载历史消息）
+- Compose 内容设置和路由导航的集中管理。
+

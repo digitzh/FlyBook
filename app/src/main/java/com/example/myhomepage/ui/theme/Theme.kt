@@ -12,6 +12,12 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
+enum class TodoType {
+    FILE,    // 文件
+    CONF,    // 会议
+    MSG,   // 通知
+    OTHER    // 其他
+}
 
 private val LightColorPalette = WeComposeColors(
     bottomBar = white1,
@@ -33,6 +39,7 @@ private val LightColorPalette = WeComposeColors(
     textFieldBackground = white1,
     more = grey4,
     redletter = red1,
+    clear = clear,
     chatPageBgAlpha = 0f,
 )
 private val DarkColorPalette = WeComposeColors(
@@ -55,6 +62,7 @@ private val DarkColorPalette = WeComposeColors(
     textFieldBackground = black7,
     more = grey5,
     redletter = red1,
+    clear = clear,
     chatPageBgAlpha = 0f,
 )
 
@@ -79,6 +87,7 @@ class WeComposeColors(
     val textFieldBackground: Color,
     val more: Color,
     val redletter: Color,
+    val clear : Color,
     val chatPageBgAlpha: Float,
 )
 
@@ -134,6 +143,7 @@ fun WeComposeTheme(
         textFieldBackground = animateColorAsState(targetColors.textFieldBackground, tween(600)).value,
         more = animateColorAsState(targetColors.more, tween(600)).value,
         redletter = animateColorAsState(targetColors.redletter, tween(600)).value,
+        clear = animateColorAsState(targetColors.clear, tween(600)).value,
         chatPageBgAlpha = animateFloatAsState(targetColors.chatPageBgAlpha, tween(600)).value,
     )
 

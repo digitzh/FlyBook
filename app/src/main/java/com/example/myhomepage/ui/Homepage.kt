@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.example.myhomepage.WeViewModel
+import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.coroutines.launch
@@ -19,7 +20,11 @@ import kotlinx.serialization.Serializable
 object Home
 
 @Composable
-fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, myLogout: () -> Unit) {
+fun HomePage(viewModel: WeViewModel,
+             onOpenChat: (Chat) -> Unit,
+             onOpenTodo: (Backlog) -> Unit,
+             myLogout: () -> Unit,
+             addTodo : () -> Unit) {
     Column(Modifier
         .background(WeComposeTheme.colors.background)
         .statusBarsPadding()) {
@@ -27,7 +32,7 @@ fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, myLogout: () ->
         HorizontalPager(pagerState, Modifier.weight(1f)) { page ->
             when (page) {
                 0 -> ChatList(viewModel.chats, onOpenChat, viewModel)
-                1 -> TodoList(viewModel.contacts)
+                1 -> TodoList(viewModel.chats,viewModel.initbacklogList,onOpenTodo, addTodo)
                 2 -> MeList(myLogout)
             }
         }

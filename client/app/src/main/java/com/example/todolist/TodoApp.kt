@@ -1,5 +1,6 @@
 package com.example.todolist
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,8 +23,11 @@ import com.example.todolist.ui.todo.TodoListScreen
 fun TodoApp() {
     val navController = rememberNavController()
 
-    // 记住一个 AppContainer，保证整个 app 生命周期内共享同一套 UseCase/Repository
-    val container = remember { TodoAppContainer() }
+//    // 记住一个 AppContainer，保证整个 app 生命周期内共享同一套 UseCase/Repository
+//    val container = remember { TodoAppContainer() }
+    // 一个 AppContainer，保证整个 app 生命周期内共享同一套 UseCase/Repository
+    val context = LocalContext.current
+    val container = remember { TodoAppContainer(context) }
 
     NavHost(
         navController = navController,

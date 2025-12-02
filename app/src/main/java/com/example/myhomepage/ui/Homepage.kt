@@ -20,7 +20,11 @@ import kotlinx.serialization.Serializable
 object Home
 
 @Composable
-fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, onOpenTodo: (Backlog) -> Unit, myLogout: () -> Unit) {
+fun HomePage(viewModel: WeViewModel,
+             onOpenChat: (Chat) -> Unit,
+             onOpenTodo: (Backlog) -> Unit,
+             myLogout: () -> Unit,
+             addTodo : () -> Unit) {
     Column(Modifier
         .background(WeComposeTheme.colors.background)
         .statusBarsPadding()) {
@@ -28,7 +32,7 @@ fun HomePage(viewModel: WeViewModel, onOpenChat: (Chat) -> Unit, onOpenTodo: (Ba
         HorizontalPager(pagerState, Modifier.weight(1f)) { page ->
             when (page) {
                 0 -> ChatList(viewModel.chats, onOpenChat)
-                1 -> TodoList(viewModel.contacts,viewModel.initbacklogList,onOpenTodo)
+                1 -> TodoList(viewModel.chats,viewModel.initbacklogList,onOpenTodo, addTodo)
                 2 -> MeList(myLogout)
             }
         }

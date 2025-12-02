@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -134,23 +135,46 @@ fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
                 .height(300.dp)
         )
 
-        doneButton(onBombClicked = { viewModel.changeBacklog(affair) })
+        DoneButton(affair.complete,onBombClicked = { viewModel.changeBacklog(affair) }) //onBombClicked--标记事务已完成的函数
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
+        DeleteButton(){} //TODO {}中加入删除事务的逻辑
 
     }
 }
 
 @Composable
-fun doneButton(onBombClicked: () -> Unit){
-    Row(Modifier.fillMaxWidth(),
+fun DoneButton(complete: Boolean, onBombClicked: () -> Unit){
+    Row(Modifier.fillMaxWidth().clickable { onBombClicked() },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
+        Checkbox(
+            checked = complete,
+            onCheckedChange = {}
+        )
         Text(
             "标记为已完成",
-            Modifier
-            .clickable { onBombClicked() },
             fontSize = 20.sp,
             color = WeComposeTheme.colors.textSecondary,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+fun DeleteButton(deleteClick : () -> Unit){
+    Row(Modifier.fillMaxWidth().clickable { deleteClick() },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painterResource(R.drawable.delete), "delete", Modifier.size(25.dp),
+        )
+        Text(
+            "删除",
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )
     }

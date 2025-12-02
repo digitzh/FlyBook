@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.myhomepage.ui.AddTodoPage
 
 import com.example.myhomepage.ui.ChatDetails
 import com.example.myhomepage.ui.ChatDetailsPage
@@ -23,6 +24,7 @@ import com.example.myhomepage.ui.LoginPage
 import com.example.myhomepage.ui.TodoDetails
 import com.example.myhomepage.ui.TodoDetailsPage
 import com.example.myhomepage.ui.theme.WeComposeTheme
+import com.example.myhomepage.ui.todoAdd
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +50,8 @@ class MainActivity : ComponentActivity() {
                         HomePage(viewModel,
                             { navController.navigate(ChatDetails(it.friend.id)) },
                             {navController.navigate(TodoDetails(it.id))},
-                            {navController.navigate(Login)})
+                            {navController.navigate(Login)},
+                            {navController.navigate(todoAdd)})
                     }
                     composable<ChatDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
@@ -61,6 +64,9 @@ class MainActivity : ComponentActivity() {
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                     ) {
                         TodoDetailsPage(viewModel, it.toRoute<TodoDetails>().todoId)
+                    }
+                    composable<todoAdd> {
+                        AddTodoPage(viewModel){}
                     }
                     composable<Login> {
                         LoginPage { password ->

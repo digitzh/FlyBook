@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +19,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +42,9 @@ import androidx.compose.ui.unit.sp
 import com.example.myhomepage.data.User
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import com.example.myhomepage.R
+import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Backlog
+import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
 import com.example.myhomepage.ui.theme.TodoType
 
@@ -48,7 +56,7 @@ fun TodoListTopBar(){
 
 @Composable
 fun TodoListItem(
-    contact: Backlog,
+    backlog: Backlog,
     modifier: Modifier = Modifier,
 ) {
     // 外层用Surface实现圆角+正方形：
@@ -61,52 +69,62 @@ fun TodoListItem(
             .aspectRatio(1f) // 关键：宽高比1:1，实现正方形
             .padding(4.dp), // 可选：Item之间的间距
         shape = RoundedCornerShape(12.dp), // 圆角大小（按需调整）
-        color = getTodoColorByType(contact.type), // 可选：背景色
+        color = getTodoColorByType(backlog.type), // 可选：背景色
         shadowElevation = 2.dp // 可选：阴影提升质感
     ) {
-        // 内部用Column/Row+居中布局，适配正方形空间
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxSize() // 填充正方形空间
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
-            verticalArrangement = Arrangement.Center // 垂直居中
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically, // 垂直居中对齐
+            horizontalArrangement = Arrangement.SpaceBetween // 左右控件贴边，中间占满
         ) {
 
-            Image(
-                painterResource(
-                    when (contact.type) {
-                        TodoType.FILE -> R.drawable.ic_contact_tag
-                        TodoType.CONF -> R.drawable.ic_contact_official
-                        TodoType.MSG -> contact.avatar
-                        TodoType.OTHER -> R.drawable.ic_photos
-                    }
-                ), "avatar", Modifier
-                    .padding(12.dp, 8.dp, 8.dp, 8.dp)
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-            )
-            Text(
-                contact.title,
-                fontSize = 20.sp,
-                color = WeComposeTheme.colors.textPrimary,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2, // 最多两行
-                overflow = TextOverflow.Ellipsis, // 溢出省略
-                textAlign = TextAlign.Center // 文字居中
-            )
+            // 内部用Column/Row+居中布局，适配正方形空间
+            Column(
+                modifier = Modifier
+                    .fillMaxSize() // 填充正方形空间
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
+                verticalArrangement = Arrangement.Center // 垂直居中
+            ) {
 
-            Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
+                Image(
+                    painterResource(
+                        when (backlog.type) {
+                            TodoType.FILE -> R.drawable.ic_contact_tag
+                            TodoType.CONF -> R.drawable.ic_contact_official
+                            TodoType.MSG -> backlog.avatar
+                            TodoType.OTHER -> R.drawable.ic_photos
+                        }
+                    ),
+                    "avatar",
+                    Modifier
+                        .padding(12.dp, 8.dp, 8.dp, 8.dp)
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                )
+                Text(
+                    backlog.title,
+                    fontSize = 20.sp,
+                    color = WeComposeTheme.colors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1, // 最多两行
+                    overflow = TextOverflow.Ellipsis, // 溢出省略
+                    textAlign = TextAlign.Center // 文字居中
+                )
 
-            // 文字：居中显示，限制行数避免溢出
-            Text(
-                contact.time,
-                fontSize = 16.sp,
-                color = WeComposeTheme.colors.textPrimary,
-                maxLines = 2, // 最多两行
-                overflow = TextOverflow.Ellipsis, // 溢出省略
-                textAlign = TextAlign.Center // 文字居中
-            )
+                Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
+
+                // 文字：居中显示，限制行数避免溢出
+                Text(
+                    backlog.time,
+                    fontSize = 16.sp,
+                    color = WeComposeTheme.colors.textPrimary,
+                    maxLines = 2, // 最多两行
+                    overflow = TextOverflow.Ellipsis, // 溢出省略
+                    textAlign = TextAlign.Center // 文字居中
+                )
+            }
         }
     }
 }
@@ -122,35 +140,45 @@ fun getTodoColorByType(type: TodoType): Color {
 }
 
 @Composable
-fun TodoList(contacts: List<User>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit) {
-    val contactsAsBacklogs = contacts.map { it.toBacklog() }
-    val backlogList = initbacklogList + contactsAsBacklogs
-    Column(Modifier
-        .background(WeComposeTheme.colors.background)
-        .fillMaxSize()
-    ) {
-        TodoListTopBar()
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
-            modifier = Modifier
+fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit, addTodo : () -> Unit ) {
+    val showChatsList = chats.mapNotNull{ it.toBacklog()}
+    val backlogList = initbacklogList + showChatsList
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { addTodo() }) {
+                Text("+",fontSize = 20.sp,) // 简单写个 "+"
+            }
+        }
+    ) { padding ->
+        Column(
+            Modifier
+                .background(WeComposeTheme.colors.background)
                 .fillMaxSize()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
-            verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
-            contentPadding = PaddingValues(4.dp) // 列表整体内边距
         ) {
+            TodoListTopBar()
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
+                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
+                contentPadding = PaddingValues(4.dp) // 列表整体内边距
+            ) {
 
-            itemsIndexed(backlogList) { index, contact ->
-                if (contact.type != TodoType.MSG)
-                    TodoListItem(contact,  Modifier.clickable{ onTodoClick(contact) })
-                else
-                    TodoListItem(contact)
-                if (index < backlogList.size - 1) {
-                    HorizontalDivider(
-                        Modifier.padding(start = 56.dp),
-                        color = WeComposeTheme.colors.divider,
-                        thickness = 0.8f.dp
-                    )
+                itemsIndexed(backlogList) { index, backlog ->
+                    if (backlog.type != TodoType.MSG)
+                        TodoListItem(backlog, Modifier.clickable { onTodoClick(backlog) })
+                    else
+                        TodoListItem(backlog)
+
+                    if (index < backlogList.size - 1) {
+                        HorizontalDivider(
+                            Modifier.padding(start = 56.dp),
+                            color = WeComposeTheme.colors.divider,
+                            thickness = 0.8f.dp
+                        )
+                    }
                 }
             }
         }

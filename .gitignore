@@ -1,6 +1,6 @@
 ### Build Directories ###
-/build/
-/target/
+build/
+target/
 /captures/
 .externalNativeBuild/
 .cxx/
@@ -12,7 +12,7 @@
 *.iml
 *.iws
 *.ipr
-/.idea/
+.idea/
 
 ### IDE - Eclipse / STS ###
 .apt_generated
@@ -29,7 +29,6 @@
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -41,9 +40,6 @@ build/
 
 ### Gradle ###
 .gradle/
-
-### Custom Directories ###
-/server/
 
 ### Maven - Exclude wrapper jar but keep wrapper script
 !.mvn/wrapper/maven-wrapper.jar

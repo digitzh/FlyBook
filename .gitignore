@@ -1,17 +1,51 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+### Build Directories ###
+/build/
+/target/
+/captures/
+.externalNativeBuild/
+.cxx/
 
-server/
+### Local Configuration Files ###
+/local.properties
+
+### IDE - IntelliJ IDEA ###
+*.iml
+*.iws
+*.ipr
+/.idea/
+
+### IDE - Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+### IDE - NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IDE - VS Code ###
+.vscode/
+
+### OS - macOS ###
+.DS_Store
+
+### Gradle ###
+.gradle/
+
+### Custom Directories ###
+/server/
+
+### Maven - Exclude wrapper jar but keep wrapper script
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/

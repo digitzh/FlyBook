@@ -1,0 +1,156 @@
+package com.example.myhomepage.ui.theme
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+
+enum class TodoType {
+    FILE,    // 文件
+    CONF,    // 会议
+    MSG,   // 通知
+    OTHER    // 其他
+}
+
+private val LightColorPalette = WeComposeColors(
+    bottomBar = white1,
+    background = white2,
+    listItem = white3,
+    meList = myblue,
+    divider = white3,
+    chatPage = white2,
+    textPrimary = black3,
+    textPrimaryMe = white3,
+    textSecondary = black1,
+    onBackground = grey3,
+    icon = black,
+    iconCurrent = myblue,
+    badge = red1,
+    onBadge = white,
+    bubbleMe = myblue,
+    bubbleOthers = white1,
+    textFieldBackground = white1,
+    more = grey4,
+    redletter = red1,
+    clear = clear,
+    chatPageBgAlpha = 0f,
+)
+private val DarkColorPalette = WeComposeColors(
+    bottomBar = black1,
+    background = black2,
+    listItem = black3,
+    meList = myblue,
+    divider = black4,
+    chatPage = black2,
+    textPrimary = white3,
+    textPrimaryMe = black6,
+    textSecondary = grey1,
+    onBackground = grey1,
+    icon = white5,
+    iconCurrent = myblue,
+    badge = red1,
+    onBadge = white,
+    bubbleMe = myblue,
+    bubbleOthers = black5,
+    textFieldBackground = black7,
+    more = grey5,
+    redletter = red1,
+    clear = clear,
+    chatPageBgAlpha = 0f,
+)
+
+@Immutable
+class WeComposeColors(
+    val bottomBar: Color,
+    val background: Color,
+    val listItem: Color,
+    val meList: Color,
+    val divider: Color,
+    val chatPage: Color,
+    val textPrimary: Color,
+    val textPrimaryMe: Color,
+    val textSecondary: Color,
+    val onBackground: Color,
+    val icon: Color,
+    val iconCurrent: Color,
+    val badge: Color,
+    val onBadge: Color,
+    val bubbleMe: Color,
+    val bubbleOthers: Color,
+    val textFieldBackground: Color,
+    val more: Color,
+    val redletter: Color,
+    val clear : Color,
+    val chatPageBgAlpha: Float,
+)
+
+private val LocalWeComposeColors = staticCompositionLocalOf<WeComposeColors> {
+    LightColorPalette
+}
+
+object WeComposeTheme {
+    val colors: WeComposeColors
+        @Composable
+        get() = LocalWeComposeColors.current
+
+    enum class Theme {
+        Light, Dark
+    }
+}
+
+@Composable
+fun ProvideWeComposeColors(
+    colors: WeComposeColors,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalWeComposeColors provides colors, content = content)
+}
+
+@Composable
+fun WeComposeTheme(
+    theme: WeComposeTheme.Theme = if (isSystemInDarkTheme()) WeComposeTheme.Theme.Dark else WeComposeTheme.Theme.Light,
+    content: @Composable () -> Unit,
+) {
+    val targetColors = when (theme) {
+        WeComposeTheme.Theme.Light -> LightColorPalette
+        WeComposeTheme.Theme.Dark -> DarkColorPalette
+    }
+
+    val colors = WeComposeColors(
+        bottomBar = animateColorAsState(targetColors.bottomBar, tween(600)).value,
+        background = animateColorAsState(targetColors.background, tween(600)).value,
+        listItem = animateColorAsState(targetColors.listItem, tween(600)).value,
+        meList = animateColorAsState(targetColors.meList, tween(600)).value,
+        divider = animateColorAsState(targetColors.divider, tween(600)).value,
+        chatPage = animateColorAsState(targetColors.chatPage, tween(600)).value,
+        textPrimary = animateColorAsState(targetColors.textPrimary, tween(600)).value,
+        textPrimaryMe = animateColorAsState(targetColors.textPrimaryMe, tween(600)).value,
+        textSecondary = animateColorAsState(targetColors.textSecondary, tween(600)).value,
+        onBackground = animateColorAsState(targetColors.onBackground, tween(600)).value,
+        icon = animateColorAsState(targetColors.icon, tween(600)).value,
+        iconCurrent = animateColorAsState(targetColors.iconCurrent, tween(600)).value,
+        badge = animateColorAsState(targetColors.badge, tween(600)).value,
+        onBadge = animateColorAsState(targetColors.onBadge, tween(600)).value,
+        bubbleMe = animateColorAsState(targetColors.bubbleMe, tween(600)).value,
+        bubbleOthers = animateColorAsState(targetColors.bubbleOthers, tween(600)).value,
+        textFieldBackground = animateColorAsState(targetColors.textFieldBackground, tween(600)).value,
+        more = animateColorAsState(targetColors.more, tween(600)).value,
+        redletter = animateColorAsState(targetColors.redletter, tween(600)).value,
+        clear = animateColorAsState(targetColors.clear, tween(600)).value,
+        chatPageBgAlpha = animateFloatAsState(targetColors.chatPageBgAlpha, tween(600)).value,
+    )
+
+    ProvideWeComposeColors(colors) {
+        MaterialTheme(
+            typography = Typography,
+            content = content
+        )
+    }
+}

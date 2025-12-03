@@ -2,19 +2,21 @@
 
 参考链接：[类飞书的 Android 办公应用开发 - 飞书文档](https://bytedance.larkoffice.com/wiki/ZchQw86ELicBrgkm9RMcuggYnyh)
 
+服务端接口参考：[FlyBook即时通信服务端(Apifox + WebSocket)](https://dcnihtjj5x0k.feishu.cn/wiki/K8mcwHGkai3Uxrkghvzc56GUnXg)
+
 ## 主页设计
 主页主要分为聊天(即时通信)，代办事项，以及个人主页三个部分,有两种主题(浅色与深色)。
 
-<img src="README_IMG\\homepage.png" width="240px" height="528px">
-<img src="README_IMG\\homepage_black.png" width="240px" height="528px">
+<img src="img\\README\\homepage.png" width="240px" height="528px">
+<img src="img\\README\\homepage_black.png" width="240px" height="528px">
 
 ### 即时通信板块
 包括主页中展示的聊天列表与每个好友的详细聊天界面。
 
-<img src="README_IMG\\homepage.png" width="240px" height="528px">
-<img src="README_IMG\\homepage_black.png" width="240px" height="528px">
-<img src="README_IMG\\chatlist.png" width="240px" height="528px">
-<img src="README_IMG\\chatlist_black.png" width="240px" height="528px">
+<img src="img\\README\\homepage.png" width="240px" height="528px">
+<img src="img\\README\\homepage_black.png" width="240px" height="528px">
+<img src="img\\README\\chatlist.png" width="240px" height="528px">
+<img src="img\\README\\chatlist_black.png" width="240px" height="528px">
 
 已实现功能：
 - 聊天界面中聊天列表展示
@@ -26,12 +28,12 @@
 ### 待办事项板块
 可以分类展示待办事项(主要分为文件，通知，事务，其他四类，不同事务按照颜色区分)，点击可进入详情页，详情页中的按钮"标记为已完成"，点击可修改状态。
 
-<img src="README_IMG\\todolist.png" width="240px" height="528px">
-<img src="README_IMG\\todolist_black.png" width="240px" height="528px">
+<img src="img\\README\\todolist.png" width="240px" height="528px">
+<img src="img\\README\\todolist_black.png" width="240px" height="528px">
 
-<img src="README_IMG\\tododetails.png" width="240px" height="528px">
-<img src="README_IMG\\tododetails_black.png" width="240px" height="528px">
-<img src="README_IMG\\tododetails_done.png" width="240px" height="528px">
+<img src="img\\README\\tododetails.png" width="240px" height="528px">
+<img src="img\\README\\tododetails_black.png" width="240px" height="528px">
+<img src="img\\README\\tododetails_done.png" width="240px" height="528px">
 
 已实现功能
 - 待办事项的分类展示
@@ -40,8 +42,8 @@
 ### 个人主页模块
 主要提供用户的基本信息，以及个人账户的设置模块等。
 
-<img src="README_IMG\\me.png" width="240px" height="528px">
-<img src="README_IMG\\me_black.png" width="240px" height="528px">
+<img src="img\\README\\me.png" width="240px" height="528px">
+<img src="img\\README\\me_black.png" width="240px" height="528px">
 
 已实现功能
 - 个人主页的展示功能
@@ -50,7 +52,7 @@
 个人主页新增退出登录按钮
 用户点击退出登录按钮，可以跳转至登录界面，进行登录操作，密码正确(密码为123)则登录成功，跳转至主页。
 
-<img src="README_IMG\\login.png" width="240px" height="528px">
+<img src="img\\README\\login.png" width="240px" height="528px">
 
 已实现功能
 - 登录功能(未与后端交互数据)

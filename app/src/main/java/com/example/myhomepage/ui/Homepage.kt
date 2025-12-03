@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.example.myhomepage.WeViewModel
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
 import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.ui.theme.WeComposeTheme
@@ -21,10 +22,11 @@ object Home
 
 @Composable
 fun HomePage(viewModel: WeViewModel,
+             todolistViewModel: TodoListViewModel,
              onOpenChat: (Chat) -> Unit,
              onOpenTodo: (Backlog) -> Unit,
              myLogout: () -> Unit,
-             addTodo : () -> Unit) {
+             addTodo: () -> Unit, ) {
     Column(Modifier
         .background(WeComposeTheme.colors.background)
         .statusBarsPadding()) {
@@ -32,7 +34,7 @@ fun HomePage(viewModel: WeViewModel,
         HorizontalPager(pagerState, Modifier.weight(1f)) { page ->
             when (page) {
                 0 -> ChatList(viewModel.chats, onOpenChat)
-                1 -> TodoList(viewModel.chats,viewModel.initbacklogList,onOpenTodo, addTodo)
+                1 -> TodoList(viewModel.chats,todolistViewModel,onOpenTodo, addTodo)
                 2 -> MeList(myLogout)
             }
         }

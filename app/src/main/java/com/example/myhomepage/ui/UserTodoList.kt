@@ -47,7 +47,10 @@ import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
 import com.example.myhomepage.ui.theme.TodoType
-
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
+import com.example.myhomepage.todolist.data.toBacklog
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Composable
 fun TodoListTopBar(){
@@ -139,13 +142,25 @@ fun getTodoColorByType(type: TodoType): Color {
     }
 }
 
+
 @Composable
-fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit, addTodo : () -> Unit ) {
+fun TodoList(
+    chats: List<Chat>,
+    listViewModel: TodoListViewModel,       // 列表页 VM
+    onTodoClick: (Backlog) -> Unit,            // 点某个待办 → 去详情页
+    addTodo: () -> Unit                  // 点新增 → 去 AddTodoPage
+) {
+    val uiState by listViewModel.uiState.collectAsState()
+
+    // 业务待办转成 Backlog
+    val todoBacklogs = uiState.todos.map { it.toBacklog() }
+
     val showChatsList = chats.mapNotNull{ it.toBacklog()}
-    val backlogList = initbacklogList + showChatsList
+
+    val backlogList = todoBacklogs + showChatsList
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { addTodo() }) {
+            FloatingActionButton(onClick = addTodo) {
                 Text("+",fontSize = 20.sp,) // 简单写个 "+"
             }
         }
@@ -185,13 +200,60 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
     }
 }
 
+
+//@Composable
+//fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit, addTodo : () -> Unit ) {
+//    val showChatsList = chats.mapNotNull{ it.toBacklog()}
+//    val backlogList = initbacklogList + showChatsList
+//    Scaffold(
+//        floatingActionButton = {
+//            FloatingActionButton(onClick = { addTodo() }) {
+//                Text("+",fontSize = 20.sp,) // 简单写个 "+"
+//            }
+//        }
+//    ) { padding ->
+//        Column(
+//            Modifier
+//                .background(WeComposeTheme.colors.background)
+//                .fillMaxSize()
+//        ) {
+//            TodoListTopBar()
+//            LazyVerticalGrid(
+//                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .padding(8.dp),
+//                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
+//                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
+//                contentPadding = PaddingValues(4.dp) // 列表整体内边距
+//            ) {
+//
+//                itemsIndexed(backlogList) { index, backlog ->
+//                    if (backlog.type != TodoType.MSG)
+//                        TodoListItem(backlog, Modifier.clickable { onTodoClick(backlog) })
+//                    else
+//                        TodoListItem(backlog)
+//
+//                    if (index < backlogList.size - 1) {
+//                        HorizontalDivider(
+//                            Modifier.padding(start = 56.dp),
+//                            color = WeComposeTheme.colors.divider,
+//                            thickness = 0.8f.dp
+//                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
 @Preview(showBackground = true)
 @Composable
 fun ContactListItemPreview() {
     WeComposeTheme {
         Box {
             TodoListItem(
-                Backlog("wenjian1", "周报","完成周报","2025-12-03", TodoType.MSG ),
+                Backlog(111, "周报","完成周报","2025-12-03", TodoType.MSG ),
             )
         }
     }

@@ -29,6 +29,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,8 +53,14 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+import com.example.myhomepage.todolist.presentation.TodoDetailViewModel
+
 @Serializable
 object todoAdd
+
+@Serializable
+data class TodoEdit(val todoId: Long)
+
 
 
 private val LightBlueBg = Color(0xFFF0F8FF)       // 浅蓝背景
@@ -61,13 +69,38 @@ private val LightBlueAccent = Color(0xFF2196F3)   // 浅蓝强调色
 private val CardBg = Color(0xFFFFFFFF)
 
 @Composable
-fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加待办事项，可能需要传参数
-    var title by remember { mutableStateOf("") }
-    var deadline by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(TodoType.FILE) }
+fun AddTodoPage(
+    addViewModel: TodoDetailViewModel,
+    isEdit: Boolean,
+    todoId: Long?, //新建时为 null；编辑时传具体 id
+    onBack: () -> Unit,
+    addTodo:()->Unit// addTodo增加待办事项
+){
+//    var title by remember { mutableStateOf("") }
+//    var deadline by remember { mutableStateOf("") }
+//    var description by remember { mutableStateOf("") }
+//    var selectedType by remember { mutableStateOf(TodoType.FILE) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
+
+    // 如果是编辑模式，加载已有任务
+    LaunchedEffect(key1 = isEdit, key2 = todoId) {
+        if (isEdit && todoId != null) {
+            addViewModel.loadExistingTask(todoId)
+        }else{
+            addViewModel.startNewTask()
+        }
+    }
+
+    val uiState by addViewModel.uiState.collectAsState()
+
+    // 保存成功后自动返回
+    LaunchedEffect(uiState.saveSuccess) {
+        if (uiState.saveSuccess) {
+            onBack()
+            addViewModel.onSaveConsumed()
+        }
+    }
 
     Column(
         Modifier
@@ -77,7 +110,7 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
     ) {
         // 标题
         val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-        WeTopBar("增加待办"){ backDispatcher?.onBackPressed() }
+        WeTopBar("编辑待办"){ backDispatcher?.onBackPressed() }
 
         // 卡片容器（主体内容）
         val CardBg = null
@@ -94,8 +127,8 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
             ) {
                 // 1. 待办标题输入
                 OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
+                    value = uiState.title,
+                    onValueChange = { addViewModel.onTitleChange(it) },
                     label = { Text("待办标题", color = LightBlueAccent) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 1,
@@ -103,7 +136,7 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
 
                 // 2. 截止日期选择
                 OutlinedTextField(
-                    value = deadline,
+                    value = uiState.deadline,
                     onValueChange = {}, // 只读，仅点击选择
                     label = { Text("截止日期", color = LightBlueAccent) },
                     modifier = Modifier.fillMaxWidth(),
@@ -119,8 +152,8 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
 
                 // 3. 详细描述输入
                 OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
+                    value = uiState.description,
+                    onValueChange = { addViewModel.onDescriptionChange(it) },
                     label = { Text("详细描述", color = LightBlueAccent) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3,
@@ -140,19 +173,19 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        TodoType.values().forEach { type ->
+                        TodoType.entries.forEach { type ->
                             if(type != TodoType.MSG)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable { selectedType = type }
+                                    modifier = Modifier.clickable { addViewModel.onTypeChange(type) }
                                 ) {
                                     Checkbox(
-                                        checked = selectedType == type,
-                                        onCheckedChange = { selectedType = type },
+                                        checked = uiState.type == type,
+                                        onCheckedChange = { addViewModel.onTypeChange(type) },
                                     )
                                     Text(
                                         text = type.name,
-                                        color = if (selectedType == type) LightPurple else LightBlueAccent
+                                        color = if (uiState.type == type) LightPurple else LightBlueAccent
                                     )
                                 }
                         }
@@ -161,12 +194,18 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
 
                 // 5. 添加按钮
                 Row(
-                    modifier = Modifier.fillMaxWidth().clickable{ addTodo()}, //TODO 添加待办事项的逻辑
+                    modifier = Modifier.fillMaxWidth().clickable{ addViewModel.onSaveClicked()}, //添加待办事项的逻辑
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text(text = "添加待办", fontSize = 16.sp,
+                    if(isEdit){
+                    Text(text = "保存修改", fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(8.dp))
+                    }else{
+                        Text(text = "添加待办", fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(8.dp))
+                    }
                 }
             }
         }
@@ -179,7 +218,7 @@ fun AddTodoPage(viewModel: WeViewModel, addTodo:()->Unit){ //TODO addTodo增加�
             confirmButton = {
                 TextButton(
                     onClick = {
-                        deadline = formatDate(datePickerState.selectedDateMillis)
+                        addViewModel.onDeadlineChange(formatDate(datePickerState.selectedDateMillis))
                         showDatePicker = false
                     }
                 ) {

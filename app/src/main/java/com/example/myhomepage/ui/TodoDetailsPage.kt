@@ -24,6 +24,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,12 +45,34 @@ import com.example.myhomepage.ui.theme.TodoType
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.serialization.Serializable
 
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
+import com.example.myhomepage.todolist.data.toBacklog
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+
 @Serializable
-data class TodoDetails(val todoId: String)
+data class TodoDetails(val todoId: Long)
 
 @Composable
-fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
-    val affair = viewModel.initbacklogList.find { it.id == todoId }!!
+fun TodoDetailsPage(
+    listViewModel: TodoListViewModel,
+    todoId: Long,
+    onBack: () -> Unit,
+    onEditClick: () -> Unit  // 从这里跳到 AddTodoPage 做编辑
+) {
+    //val affair = viewModel.initbacklogList.find { it.id == todoId }!!
+    val uiState by listViewModel.uiState.collectAsState()
+    val task = uiState.todos.firstOrNull { it.id == todoId }
+
+    if (task == null) {
+        // 任务找不到（比如刚刚删掉），直接返回列表，不显示“未找到任务”
+        LaunchedEffect(Unit) {
+            onBack()
+        }
+        return
+    }
+
+    val affair = task.toBacklog()   // 用刚才的 mapper 转成 Backlog
     Column(
         Modifier
             .background(WeComposeTheme.colors.background)
@@ -111,7 +134,7 @@ fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "状态：${affair.complete}",
+                    text = "状态：${if (affair.complete) "已完成" else "未完成"}",
                     fontSize = 16.sp,
                     color = WeComposeTheme.colors.textPrimary
                 )
@@ -125,7 +148,9 @@ fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
             fontSize = 18.sp,
             color = WeComposeTheme.colors.textPrimary,
             lineHeight = 24.sp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable{ onEditClick() }
         )
 
         Spacer(
@@ -135,24 +160,24 @@ fun TodoDetailsPage(viewModel: WeViewModel, todoId: String) {
                 .height(300.dp)
         )
 
-        DoneButton(affair.complete,onBombClicked = { viewModel.changeBacklog(affair) }) //onBombClicked--标记事务已完成的函数
+        DoneButton(affair.complete, onToggle = { listViewModel.onToggleCompleted(todoId) }) //onToggle--标记事务已完成的函数
         Spacer(
             modifier = Modifier.height(20.dp)
         )
-        DeleteButton(){} //TODO {}中加入删除事务的逻辑
+        DeleteButton(deleteClick = {listViewModel.onDeleteTodo(todoId) }) //删除事务返回上一页的逻辑
 
     }
 }
 
 @Composable
-fun DoneButton(complete: Boolean, onBombClicked: () -> Unit){
-    Row(Modifier.fillMaxWidth().clickable { onBombClicked() },
+fun DoneButton(complete: Boolean, onToggle: () -> Unit){
+    Row(Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         Checkbox(
             checked = complete,
-            onCheckedChange = {}
+            onCheckedChange = { onToggle() }
         )
         Text(
             "标记为已完成",

@@ -13,8 +13,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.myhomepage.ui.AddTodoPage
+import com.example.myhomepage.todolist.TodoAppContainer
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
+import com.example.myhomepage.todolist.presentation.TodoDetailViewModel
 
+import com.example.myhomepage.ui.AddTodoPage
 import com.example.myhomepage.ui.ChatDetails
 import com.example.myhomepage.ui.ChatDetailsPage
 import com.example.myhomepage.ui.Home
@@ -25,11 +28,30 @@ import com.example.myhomepage.ui.TodoDetails
 import com.example.myhomepage.ui.TodoDetailsPage
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import com.example.myhomepage.ui.todoAdd
+import com.example.myhomepage.ui.TodoEdit
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     val viewModel: WeViewModel by viewModels()
+
+
+    // 在 Activity 里用 lazy 创建 ToDoList DI 容器
+    private val todoAppContainer: TodoAppContainer by lazy {
+        TodoAppContainer()
+    }
+//    val todolistViewModel: TodoListViewModel by viewModels()
+//    val addViewModel: TodoDetailViewModel by viewModels()
+    // 用 Activity 的 viewModels + 自定义 factory 创建两个 VM
+    private val todolistViewModel: TodoListViewModel by viewModels {
+        todoAppContainer.todoListViewModelFactory
+    }
+
+    private val addViewModel: TodoDetailViewModel by viewModels {
+        todoAppContainer.todoDetailViewModelFactory
+    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +70,7 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController, Home) {
                     composable<Home> {
                         HomePage(viewModel,
+                            todolistViewModel,
                             { navController.navigate(ChatDetails(it.friend.id)) },
                             {navController.navigate(TodoDetails(it.id))},
                             {navController.navigate(Login)},
@@ -63,10 +86,23 @@ class MainActivity : ComponentActivity() {
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                     ) {
-                        TodoDetailsPage(viewModel, it.toRoute<TodoDetails>().todoId)
+                        TodoDetailsPage(todolistViewModel, it.toRoute<TodoDetails>().todoId,
+                            onBack = { navController.popBackStack() }, onEditClick = {navController.navigate(
+                                TodoEdit(it.toRoute<TodoDetails>().todoId))}
+                        )
                     }
                     composable<todoAdd> {
-                        AddTodoPage(viewModel){}
+                        AddTodoPage(addViewModel,false,null, onBack = {navController.popBackStack()}){}
+                    }
+                    composable<TodoEdit> { backStackEntry ->
+                        val args = backStackEntry.toRoute<TodoEdit>()
+                        AddTodoPage(
+                            addViewModel = addViewModel,
+                            isEdit = true,
+                            todoId = args.todoId,
+                            onBack = { navController.popBackStack() },
+                            addTodo = {}
+                        )
                     }
                     composable<Login> {
                         LoginPage { password ->

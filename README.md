@@ -75,10 +75,14 @@ FlyBook/
 
 包括主页中展示的聊天列表与每个好友的详细聊天界面。
 
+<img src="img\\README\\add_chat.png" width="240px" height="528px">
 <img src="img\\README\\homepage.png" width="240px" height="528px">
 <img src="img\\README\\homepage_black.png" width="240px" height="528px">
 <img src="img\\README\\chatlist.png" width="240px" height="528px">
-<img src="img\\README\\chatlist_black.png" width="240px" height="528px">
+<!-- <img src="img\\README\\chatlist_black.png" width="240px" height="528px"> -->
+<img src="img\\README\\emoji.png" width="240px" height="528px">
+<img src="img\\README\\emoji_boom.png" width="240px" height="528px">
+
 
 #### ✅已完成
 
@@ -88,6 +92,7 @@ FlyBook/
 - 未读消息提醒
 - 会话界面历史消息展示
 - 发送消息展示
+- 部分Emoji表情的添加与动画效果
 
 #### 📄待完成
 
@@ -101,11 +106,12 @@ FlyBook/
 分类展示待办事项(主要分为文件、通知、事务、其他，不同事务按照颜色区分)，点击可进入详情页，详情页中的按钮"标记为已完成"，点击可修改状态。
 
 <img src="img\\README\\todolist.png" width="240px" height="528px">
-<img src="img\\README\\todolist_black.png" width="240px" height="528px">
-
+<!-- <img src="img\\README\\todolist_black.png" width="240px" height="528px"> -->
 <img src="img\\README\\tododetails.png" width="240px" height="528px">
-<img src="img\\README\\tododetails_black.png" width="240px" height="528px">
+<!-- <img src="img\\README\\tododetails_black.png" width="240px" height="528px"> -->
 <img src="img\\README\\tododetails_done.png" width="240px" height="528px">
+<img src="img\\README\\add_todo.png" width="240px" height="528px">
+<img src="img\\README\\date.png" width="240px" height="528px">
 
 #### ✅已完成
 
@@ -124,7 +130,7 @@ FlyBook/
 主要提供用户的基本信息，以及个人账户的设置模块等。
 
 <img src="img\\README\\me.png" width="240px" height="528px">
-<img src="img\\README\\me_black.png" width="240px" height="528px">
+<!-- <img src="img\\README\\me_black.png" width="240px" height="528px"> -->
 
 #### ✅已完成
 

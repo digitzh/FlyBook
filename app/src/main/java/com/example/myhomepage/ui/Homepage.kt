@@ -33,7 +33,7 @@ fun HomePage(viewModel: WeViewModel,
             when (page) {
                 0 -> ChatList(viewModel.chats, onOpenChat, viewModel)
                 1 -> TodoList(viewModel.chats,viewModel.initbacklogList,onOpenTodo, addTodo)
-                2 -> MeList(myLogout)
+                2 -> MeList(viewModel,myLogout)
             }
         }
         val scope = rememberCoroutineScope()

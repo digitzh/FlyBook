@@ -19,11 +19,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +39,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +47,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
@@ -50,15 +60,28 @@ import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Msg
 import com.example.myhomepage.data.User
 import com.example.myhomepage.ui.theme.WeComposeTheme
+import com.google.android.gms.fitness.data.Value
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChatDetails(val userId: String)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
   val chat = viewModel.chats.find { it.friend.id == userId }!!
   var shakingTime by remember { mutableIntStateOf(0) }
+    //emoji
+  var showEmojiSheet by remember { mutableStateOf(false) }
+  val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true, // 跳过半展开状态，直接全屏/收起
+//        confirmValueChange = { it != SheetState.Value.Expanded } // 确认状态变化
+  )
+  val coroutineScope = rememberCoroutineScope()
+
   Column(
       Modifier
           .background(WeComposeTheme.colors.background)
@@ -73,19 +96,20 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
             .weight(1f)
     ) {
       val shakingOffset = remember { Animatable(0f) }
-//      LaunchedEffect(shakingTime) {
-//        if (shakingTime == -1) {
-//          shakingOffset.animateTo(
-//            0f,
-//            animationSpec = spring(0.3f, 600f),
-//            initialVelocity = -2000f
-//          ) { }
-//        }
-//      }
+      LaunchedEffect(shakingTime) {
+        if (shakingTime != 0) {
+          shakingOffset.animateTo(
+            0f,
+            animationSpec = spring(0.3f, 600f),
+            initialVelocity = -2000f
+          ) { }
+        }
+      }
+
       LazyColumn(
         Modifier
-          .fillMaxSize()
-          .offset(shakingOffset.value.dp, shakingOffset.value.dp)
+            .fillMaxSize()
+            .offset(shakingOffset.value.dp, shakingOffset.value.dp)
       ) {
         items(chat.msgs.size) { index ->
           val msg = chat.msgs[index]
@@ -94,10 +118,34 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
         }
       }
     }
-    ChatBottomBar(onBombClicked = { editText ->
-      viewModel.boom(chat,editText)
-      shakingTime++
-    })
+    ChatBottomBar(onBombClicked = { editText -> viewModel.boom(chat,editText) },
+      onOtherClicked = {showEmojiSheet = true})
+
+    if (showEmojiSheet) {
+      ModalBottomSheet(
+          onDismissRequest = {
+              // 点击弹窗外区域关闭
+              coroutineScope.launch { sheetState.hide() }
+                  .invokeOnCompletion { showEmojiSheet = false }
+          },
+          sheetState = sheetState,
+          // 自定义弹窗背景（贴近微信风格）
+          containerColor = Color(0xFFF5F5F5),
+
+          // 弹窗内容：Emoji网格
+          content = {
+              EmojiGridView(
+                  emojiList = listOf("\uD83D\uDCA3","\uD83D\uDC4C","\uD83D\uDC4D","\uD83D\uDC36",),
+                  onEmojiClick = { emoji ->
+                      viewModel.boom(chat,emoji)
+                      if(emoji.equals("\uD83D\uDCA3"))  shakingTime++
+                      showEmojiSheet = false
+                  },
+                  modifier = Modifier.padding(16.dp)
+              )
+          }
+      )
+    }
   }
 }
 
@@ -105,7 +153,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
 fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
   val shakingAngleBubble = remember { Animatable(0f) }
 //  LaunchedEffect(key1 = shakingTime, block = {
-//    if (shakingTime == -1) {
+//    if (shakingTime != 0) {
 //      delay(shakingLevel.toLong() * 30)
 //      shakingAngleBubble.animateTo(
 //        0f,
@@ -117,141 +165,141 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
   if (msg.from == User.Me) {
     Row(
       Modifier
-        .fillMaxWidth()
-        .padding(8.dp),
+          .fillMaxWidth()
+          .padding(8.dp),
       horizontalArrangement = Arrangement.End
     ) {
       val bubbleColor = WeComposeTheme.colors.bubbleMe
       Text(
         "${msg.text}",
         Modifier
-          .graphicsLayer(
-            rotationZ = shakingAngleBubble.value,
-            transformOrigin = TransformOrigin(1f, 0f)
-          )
-          .drawBehind {
-            val bubble = Path().apply {
-              val rect = RoundRect(
-                10.dp.toPx(),
-                0f,
-                size.width - 10.dp.toPx(),
-                size.height,
-                4.dp.toPx(),
-                4.dp.toPx()
-              )
-              addRoundRect(rect)
-              moveTo(size.width - 10.dp.toPx(), 15.dp.toPx())
-              lineTo(size.width - 5.dp.toPx(), 20.dp.toPx())
-              lineTo(size.width - 10.dp.toPx(), 25.dp.toPx())
-              close()
+            .graphicsLayer(
+                rotationZ = shakingAngleBubble.value,
+                transformOrigin = TransformOrigin(1f, 0f)
+            )
+            .drawBehind {
+                val bubble = Path().apply {
+                    val rect = RoundRect(
+                        10.dp.toPx(),
+                        0f,
+                        size.width - 10.dp.toPx(),
+                        size.height,
+                        4.dp.toPx(),
+                        4.dp.toPx()
+                    )
+                    addRoundRect(rect)
+                    moveTo(size.width - 10.dp.toPx(), 15.dp.toPx())
+                    lineTo(size.width - 5.dp.toPx(), 20.dp.toPx())
+                    lineTo(size.width - 10.dp.toPx(), 25.dp.toPx())
+                    close()
+                }
+                drawPath(bubble, bubbleColor)
             }
-            drawPath(bubble, bubbleColor)
-          }
-          .padding(20.dp, 10.dp),
+            .padding(20.dp, 10.dp),
         color = WeComposeTheme.colors.textPrimaryMe)
       Image(
         painterResource(msg.from.avatar),
         contentDescription = msg.from.name,
         Modifier
-          .graphicsLayer(
-            rotationZ = shakingAngleBubble.value * 0.6f,
-            transformOrigin = TransformOrigin(1f, 0f)
-          )
-          .size(40.dp)
-          .clip(RoundedCornerShape(4.dp))
+            .graphicsLayer(
+                rotationZ = shakingAngleBubble.value * 0.6f,
+                transformOrigin = TransformOrigin(1f, 0f)
+            )
+            .size(40.dp)
+            .clip(RoundedCornerShape(4.dp))
       )
     }
   } else {
     Row(
       Modifier
-        .fillMaxWidth()
-        .padding(8.dp)
+          .fillMaxWidth()
+          .padding(8.dp)
     ) {
       Image(
         painterResource(msg.from.avatar),
         contentDescription = msg.from.name,
         Modifier
-          .graphicsLayer(
-            rotationZ = -shakingAngleBubble.value * 0.6f,
-            transformOrigin = TransformOrigin(0f, 0f)
-          )
-          .size(40.dp)
-          .clip(RoundedCornerShape(4.dp))
+            .graphicsLayer(
+                rotationZ = -shakingAngleBubble.value * 0.6f,
+                transformOrigin = TransformOrigin(0f, 0f)
+            )
+            .size(40.dp)
+            .clip(RoundedCornerShape(4.dp))
       )
       val bubbleColor = WeComposeTheme.colors.bubbleOthers
       Text(
         "${msg.text}",
         Modifier
-          .graphicsLayer(
-            rotationZ = -shakingAngleBubble.value,
-            transformOrigin = TransformOrigin(0f, 0f)
-          )
-          .drawBehind {
-            val bubble = Path().apply {
-              val rect = RoundRect(
-                10.dp.toPx(),
-                0f,
-                size.width - 10.dp.toPx(),
-                size.height,
-                4.dp.toPx(),
-                4.dp.toPx()
-              )
-              addRoundRect(rect)
-              moveTo(10.dp.toPx(), 15.dp.toPx())
-              lineTo(5.dp.toPx(), 20.dp.toPx())
-              lineTo(10.dp.toPx(), 25.dp.toPx())
-              close()
+            .graphicsLayer(
+                rotationZ = -shakingAngleBubble.value,
+                transformOrigin = TransformOrigin(0f, 0f)
+            )
+            .drawBehind {
+                val bubble = Path().apply {
+                    val rect = RoundRect(
+                        10.dp.toPx(),
+                        0f,
+                        size.width - 10.dp.toPx(),
+                        size.height,
+                        4.dp.toPx(),
+                        4.dp.toPx()
+                    )
+                    addRoundRect(rect)
+                    moveTo(10.dp.toPx(), 15.dp.toPx())
+                    lineTo(5.dp.toPx(), 20.dp.toPx())
+                    lineTo(10.dp.toPx(), 25.dp.toPx())
+                    close()
+                }
+                drawPath(bubble, bubbleColor)
             }
-            drawPath(bubble, bubbleColor)
-          }
-          .padding(20.dp, 10.dp),
+            .padding(20.dp, 10.dp),
         color = WeComposeTheme.colors.textPrimary)
     }
   }
 }
 
 @Composable
-fun ChatBottomBar(onBombClicked: (String) -> Unit) {
+fun ChatBottomBar(onBombClicked: (String) -> Unit, onOtherClicked : () -> Unit) {
 //  val messages = remember { mutableStateListOf<String>() }
   var editingText by remember { mutableStateOf("") }
   Row(
     Modifier
-      .fillMaxWidth()
-      .background(WeComposeTheme.colors.bottomBar)
-      .padding(4.dp, 0.dp)
-      .navigationBarsPadding()
+        .fillMaxWidth()
+        .background(WeComposeTheme.colors.bottomBar)
+        .padding(4.dp, 0.dp)
+        .navigationBarsPadding()
   ) {
     Icon(
       painterResource(R.drawable.ic_voice),
       contentDescription = null,
       Modifier
-        .align(Alignment.CenterVertically)
-        .padding(4.dp)
-        .size(28.dp),
+          .align(Alignment.CenterVertically)
+          .padding(4.dp)
+          .size(28.dp),
       tint = WeComposeTheme.colors.icon
     )
     BasicTextField(
       editingText, { editingText = it },
       Modifier
-        .weight(1f)
-        .padding(4.dp, 8.dp)
-        .height(40.dp)
-        .clip(MaterialTheme.shapes.small)
-        .background(WeComposeTheme.colors.textFieldBackground)
-        .padding(start = 8.dp, top = 10.dp, end = 8.dp),
+          .weight(1f)
+          .padding(4.dp, 8.dp)
+          .height(40.dp)
+          .clip(MaterialTheme.shapes.small)
+          .background(WeComposeTheme.colors.textFieldBackground)
+          .padding(start = 8.dp, top = 10.dp, end = 8.dp),
       cursorBrush = SolidColor(WeComposeTheme.colors.textPrimary)
     )
     Text(
       "发送",
       Modifier
-        .clickable{
-            if (editingText.isNotBlank()) {
-                onBombClicked(editingText)
-                editingText = ""
-            }
-        }
-        .padding(4.dp)
-        .align(Alignment.CenterVertically),
+          .clickable {
+              if (editingText.isNotBlank()) {
+                  onBombClicked(editingText)
+                  editingText = ""
+              }
+          }
+          .padding(4.dp)
+          .align(Alignment.CenterVertically),
       fontSize = 20.sp,
       color = WeComposeTheme.colors.textPrimary
     )
@@ -259,10 +307,41 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit) {
       painterResource(R.drawable.ic_add),
       contentDescription = null,
       Modifier
-        .align(Alignment.CenterVertically)
-        .padding(4.dp)
-        .size(28.dp),
+          .align(Alignment.CenterVertically)
+          .padding(4.dp)
+          .size(28.dp)
+          .clickable { onOtherClicked() },
       tint = WeComposeTheme.colors.icon
     )
   }
+}
+
+//展示emoji的网格
+@Composable
+fun EmojiGridView(
+    emojiList: List<String>,
+    onEmojiClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        // 网格展示Emoji（4列布局，贴近微信）
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4), // 4列
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(emojiList) { emoji ->
+                // Emoji项：可点击，放大显示
+                Text(
+                    text = emoji,
+                    fontSize = 32.sp, // Emoji大小
+                    modifier = Modifier
+                        .clickable { onEmojiClick(emoji) }
+                        .padding(8.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    }
 }

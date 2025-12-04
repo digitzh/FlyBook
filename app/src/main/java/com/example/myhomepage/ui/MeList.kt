@@ -29,11 +29,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myhomepage.R
+import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.User
+import com.example.myhomepage.database.UserEntity
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
-fun MeListTopBar() {
+fun MeListTopBar(viewModel: WeViewModel) {
   Row(
     Modifier
       .background(WeComposeTheme.colors.meList)
@@ -54,14 +56,14 @@ fun MeListTopBar() {
         .padding(start = 12.dp)
     ) {
       Text(
-        User.Me.name,
+          viewModel.currentUser?.let { user -> "用户名：${user.username}" } ?: "游客${viewModel.currentUser?.userId}",
         Modifier.padding(top = 75.dp),
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
         color = WeComposeTheme.colors.textPrimaryMe
       )
       Text(
-        "ID：${User.Me.id}",
+        "ID：${viewModel.currentUser?.userId}",
         Modifier.padding(top = 21.dp),
         fontSize = 14.sp,
         color = WeComposeTheme.colors.textPrimaryMe
@@ -86,11 +88,11 @@ fun MeListTopBar() {
   }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MeListTopBarPreview() {
-  MeListTopBar()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun MeListTopBarPreview() {
+//  MeListTopBar()
+//}
 
 @Composable
 fun MeListItem(
@@ -146,14 +148,14 @@ fun LogoutItem(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun MeList(myLogout : () -> Unit) {
+fun MeList(viewModel: WeViewModel, myLogout : () -> Unit) {
   Box(Modifier
     .background(WeComposeTheme.colors.background)
     .fillMaxSize()) {
     Column(Modifier
       .background(WeComposeTheme.colors.chatPage)
       .fillMaxWidth()) {
-      MeListTopBar()
+      MeListTopBar(viewModel)
       Spacer(
         Modifier
           .background(WeComposeTheme.colors.background)

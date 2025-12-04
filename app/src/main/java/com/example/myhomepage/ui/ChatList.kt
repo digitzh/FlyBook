@@ -36,6 +36,7 @@ import coil.compose.AsyncImage
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
+
 @Composable
 fun ChatList(
     chats: List<Chat>, 

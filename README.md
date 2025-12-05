@@ -69,6 +69,7 @@ FlyBook/
 
 ### 登录模块（可选）
 
+<img src="img\\README\\login_nocode.png" width="240px" height="528px">
 <img src="img\\README\\login.png" width="240px" height="528px">
 
 ### 即时通信模块
@@ -79,6 +80,7 @@ FlyBook/
 <img src="img\\README\\homepage.png" width="240px" height="528px">
 <img src="img\\README\\homepage_black.png" width="240px" height="528px">
 <img src="img\\README\\chatlist.png" width="240px" height="528px">
+<img src="img\\README\\chatlist_complete.png" width="240px" height="528px">
 <!-- <img src="img\\README\\chatlist_black.png" width="240px" height="528px"> -->
 <img src="img\\README\\emoji.png" width="240px" height="528px">
 <img src="img\\README\\emoji_boom.png" width="240px" height="528px">
@@ -93,6 +95,7 @@ FlyBook/
 - 会话界面历史消息展示
 - 发送消息展示
 - 部分Emoji表情的添加与动画效果
+- 隐藏聊天
 
 #### 📄待完成
 
@@ -112,6 +115,7 @@ FlyBook/
 <img src="img\\README\\tododetails_done.png" width="240px" height="528px">
 <img src="img\\README\\add_todo.png" width="240px" height="528px">
 <img src="img\\README\\date.png" width="240px" height="528px">
+<img src="img\\README\\todolist_com+del.png" width="240px" height="528px">
 
 #### ✅已完成
 
@@ -120,10 +124,11 @@ FlyBook/
 - 任务详情查看
 - 任务状态管理
 - 任务列表展示（网格布局）
+- 任务与聊天消息关联
 
 #### 📄待完成
 
-- 任务与聊天消息关联
+
 
 ### 个人主页模块
 

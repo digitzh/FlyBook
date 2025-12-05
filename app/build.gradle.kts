@@ -67,4 +67,14 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    // ViewModel 在 Compose 里使用 viewModel()
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    // Navigation-Compose
+    implementation("androidx.navigation:navigation-compose:2.9.6")
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended")
+    // Room 依赖
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)  // 使用 ksp 处理注解
 }

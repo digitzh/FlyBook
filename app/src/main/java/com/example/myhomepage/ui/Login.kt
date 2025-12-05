@@ -90,15 +90,15 @@ fun MeMessagesItem(){
             horizontalArrangement = Arrangement.Center
         ){
             Text(
-                text = User.Me.name,
+                text = "欢迎使用，请先登录",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
             )
-            Spacer(modifier = Modifier.size(20.dp))
-            Text(
-                "${User.Me.id}",
-                fontSize = 20.sp,
-            )
+//            Spacer(modifier = Modifier.size(20.dp))
+//            Text(
+//                "${User.Me.id}",
+//                fontSize = 20.sp,
+//            )
         }
 
     }
@@ -108,6 +108,7 @@ fun MeMessagesItem(){
 fun LoginItem(onLoginClick : (String) -> Unit){
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPasswordField by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -130,23 +131,31 @@ fun LoginItem(onLoginClick : (String) -> Unit){
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = WeComposeTheme.colors.textPrimary,
                     unfocusedTextColor = WeComposeTheme.colors.textSecondary
+                ),
+            )
+            Text(
+                text = if (showPasswordField) "跳过密码" else "使用密码",
+                Modifier.align(Alignment.End).clickable{ showPasswordField = !showPasswordField},
+                color = WeComposeTheme.colors.meList,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+
+            //默认隐藏密码输入框，可以点击"使用密码"手动弹出
+            if(showPasswordField) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it }, // 更新密码状态
+                    label = { Text("密码", color = WeComposeTheme.colors.meList) },
+                    visualTransformation = PasswordVisualTransformation(), // 密码隐藏
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                 )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it }, // 更新密码状态
-                label = { Text("密码", color = WeComposeTheme.colors.meList) },
-                visualTransformation = PasswordVisualTransformation(), // 密码隐藏
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-
-            )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
-
             // 登录按钮
             Button(
                 onClick = { onLoginClick(userId) },

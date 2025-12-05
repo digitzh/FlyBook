@@ -1,0 +1,47 @@
+### Build Directories ###
+build/
+target/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+### Local Configuration Files ###
+/local.properties
+
+### IDE - IntelliJ IDEA ###
+*.iml
+*.iws
+*.ipr
+.idea/
+
+### IDE - Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+### IDE - NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IDE - VS Code ###
+.vscode/
+
+### OS - macOS ###
+.DS_Store
+
+### Gradle ###
+.gradle/
+
+### Maven - Exclude wrapper jar but keep wrapper script
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/

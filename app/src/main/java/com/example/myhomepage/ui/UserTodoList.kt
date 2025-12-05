@@ -190,6 +190,7 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
     var showButton by remember { mutableStateOf(false) }
     var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
     var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }
+    var buttonOffset by remember { mutableStateOf(IntOffset.Zero) }
 
     Scaffold(
         floatingActionButton = {
@@ -219,7 +220,8 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
                         TodoListItem(backlog, Modifier,
                             {onTodoClick(backlog)},{offset->
                                 buttonOffsetLeft = IntOffset(offset.x-200,offset.y)
-                                buttonOffsetRight = IntOffset(offset.x+50,offset.y)
+                                buttonOffset = IntOffset(offset.x-66,offset.y)
+                                buttonOffsetRight = IntOffset(offset.x+70,offset.y)
                                 showButton = true
                             })
                     else
@@ -255,6 +257,20 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
 
         Popup(
             // 按钮偏移位置（基于长按坐标）
+            offset = buttonOffset,
+            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
+            onDismissRequest = { showButton = false }
+        ) {
+            TodoShareButton(
+                onClick = {
+                    // 完成按钮点击逻辑（实现）TODO
+                    showButton = false
+                }
+            )
+        }
+
+        Popup(
+            // 按钮偏移位置（基于长按坐标）
             offset = buttonOffsetRight,
             // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
             onDismissRequest = { showButton = false }
@@ -275,7 +291,7 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
 fun TodoCompleteButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(58.dp) // 圆形按钮大小
+            .size(50.dp) // 圆形按钮大小
             .background(
                 color = Color(0xFF90EE90), // 浅绿色（淡绿）
                 shape = CircleShape // 圆形
@@ -292,14 +308,16 @@ fun TodoCompleteButton(onClick: () -> Unit) {
             Text(
                 text = "\u2714",
                 color = Color.White,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
             )
             Spacer(modifier = Modifier.width(2.dp))
             // 完成文字
             Text(
                 text = "完成",
                 color = Color.White,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
             )
         }
     }
@@ -309,7 +327,7 @@ fun TodoCompleteButton(onClick: () -> Unit) {
 fun TodoDeleteButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(58.dp) // 圆形按钮大小
+            .size(50.dp) // 圆形按钮大小
             .background(
                 color = Color(0xFFF8B4B4),
                 shape = CircleShape // 圆形
@@ -326,14 +344,52 @@ fun TodoDeleteButton(onClick: () -> Unit) {
             Text(
                 text = "\u2718",
                 color = Color.White,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
             )
             Spacer(modifier = Modifier.width(2.dp))
             // 完成文字
             Text(
                 text = "删除",
                 color = Color.White,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun TodoShareButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(50.dp) // 圆形按钮大小
+            .background(
+                color = Color(0xFFE1E15A),
+                shape = CircleShape // 圆形
+            )
+            .clickable { onClick() } // 点击事件
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            // 对号图标
+            Text(
+                text = "\u269D",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            // 完成文字
+            Text(
+                text = "分享",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
             )
         }
     }

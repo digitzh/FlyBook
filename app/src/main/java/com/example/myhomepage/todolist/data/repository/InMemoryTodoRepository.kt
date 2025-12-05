@@ -1,6 +1,6 @@
 package com.example.myhomepage.todolist.data.repository
 
-import com.example.myhomepage.todolist.data.TodoTask
+import com.example.myhomepage.todolist.domain.TodoTask
 import com.example.myhomepage.todolist.domain.repository.TodoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 /**
  * 一个最简单的内存版本实现：
  * - 用 MutableStateFlow 存一份 List<TodoTask>
- * - 进程被杀就全没了，但足够 demo 测试使用
+ * - 进程被杀就全没了，仅用于 demo 测试使用
  */
 class InMemoryTodoRepository : TodoRepository {
 

@@ -1,8 +1,7 @@
 package com.example.myhomepage.todolist.data
 
 import com.example.myhomepage.data.Backlog
-import com.example.myhomepage.todolist.data.TodoTask
-import kotlin.toString
+import com.example.myhomepage.todolist.domain.TodoTask
 
 fun TodoTask.toBacklog(): Backlog {
     return Backlog(

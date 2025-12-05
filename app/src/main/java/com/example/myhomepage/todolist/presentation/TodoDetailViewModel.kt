@@ -2,7 +2,7 @@ package com.example.myhomepage.todolist.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myhomepage.todolist.data.TodoTask
+import com.example.myhomepage.todolist.domain.TodoTask
 import com.example.myhomepage.todolist.domain.usecase.ObserveTodoDetailUseCase
 import com.example.myhomepage.todolist.domain.usecase.SaveTodoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,6 +1,6 @@
 package com.example.myhomepage.todolist.domain.repository
 
-import com.example.myhomepage.todolist.data.TodoTask
+import com.example.myhomepage.todolist.domain.TodoTask
 import kotlinx.coroutines.flow.Flow
 
 /**

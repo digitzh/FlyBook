@@ -38,10 +38,12 @@ class MainActivity : ComponentActivity() {
 
     // 在 Activity 里用 lazy 创建 ToDoList DI 容器
     private val todoAppContainer: TodoAppContainer by lazy {
-        TodoAppContainer()
+        // 用 applicationContext 或 this 都可以
+        TodoAppContainer(applicationContext)
     }
-//    val todolistViewModel: TodoListViewModel by viewModels()
-//    val addViewModel: TodoDetailViewModel by viewModels()
+//    private val todoAppContainer: TodoAppContainer by lazy {
+//        TodoAppContainer()
+//    }
     // 用 Activity 的 viewModels + 自定义 factory 创建两个 VM
     private val todolistViewModel: TodoListViewModel by viewModels {
         todoAppContainer.todoListViewModelFactory

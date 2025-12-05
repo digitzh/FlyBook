@@ -24,29 +24,29 @@ class WeViewModel : ViewModel() {
     .stateIn(viewModelScope, SharingStarted.Lazily, true)
   val contacts by mutableStateOf(
     listOf(
-        User(111, "张三", R.drawable.avatar_zhangsan),
-        User(222, "李四", R.drawable.avatar_lisi),
+        User("zhangsan", "张三", R.drawable.avatar_zhangsan),
+        User("lisi", "李四", R.drawable.avatar_lisi),
     )
   )
   var chats by mutableStateOf(
     listOf(
       Chat(
-        friend = User(111, "张三", R.drawable.avatar_zhangsan),
+        friend = User("zhangsan", "张三", R.drawable.avatar_zhangsan),
         mutableStateListOf(
-          Msg(User(111, "张三", R.drawable.avatar_zhangsan), "锄禾日当午", "14:20"),
+          Msg(User("zhangsan", "张三", R.drawable.avatar_zhangsan), "锄禾日当午", "14:20"),
           Msg(User.Me, "汗滴禾下土", "14:20"),
-          Msg(User(111, "张三", R.drawable.avatar_zhangsan), "谁知盘中餐", "14:20"),
+          Msg(User("zhangsan", "张三", R.drawable.avatar_zhangsan), "谁知盘中餐", "14:20"),
           Msg(User.Me, "粒粒皆辛苦", "14:20"),
-          Msg(User(111, "张三", R.drawable.avatar_zhangsan), "不聊了", "14:20"),
+          Msg(User("zhangsan", "张三", R.drawable.avatar_zhangsan), "不聊了", "14:20"),
           Msg(User.Me, "吃饭吧？", "14:28"),
         )
       ),
       Chat(
-        friend = User(222, "李四", R.drawable.avatar_lisi),
+        friend = User("lisi", "李四", R.drawable.avatar_lisi),
         mutableStateListOf(
-          Msg(User(222, "李四", R.drawable.avatar_lisi), "你好", "13:48"),
+          Msg(User("lisi", "李四", R.drawable.avatar_lisi), "你好", "13:48"),
           Msg(User.Me, "你好", "13:48"),
-          Msg(User(222, "李四", R.drawable.avatar_lisi), "你是谁", "13:48").apply { read = false },
+          Msg(User("lisi", "李四", R.drawable.avatar_lisi), "你是谁", "13:48").apply { read = false },
         )
       ),
     )

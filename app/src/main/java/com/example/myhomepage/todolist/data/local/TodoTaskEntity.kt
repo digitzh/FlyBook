@@ -10,8 +10,8 @@ import com.example.myhomepage.ui.theme.TodoType
  */
 @Entity(tableName = "todo_tasks")
 data class TodoTaskEntity(
-    @PrimaryKey
-    val id: Long,                 // 用业务层生成的 id，不用 autoGenerate
+    @PrimaryKey(autoGenerate = true)    // 交给数据库自增
+    val id: Long = 0,
     val title: String,
     val description: String,
     val deadline: String?,

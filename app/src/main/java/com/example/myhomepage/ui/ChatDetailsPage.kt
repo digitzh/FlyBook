@@ -53,10 +53,10 @@ import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ChatDetails(val userId: Long)
+data class ChatDetails(val userId: String)
 
 @Composable
-fun ChatDetailsPage(viewModel: WeViewModel, userId: Long) {
+fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
   val chat = viewModel.chats.find { it.friend.id == userId }!!
   var shakingTime by remember { mutableIntStateOf(0) }
   Column(

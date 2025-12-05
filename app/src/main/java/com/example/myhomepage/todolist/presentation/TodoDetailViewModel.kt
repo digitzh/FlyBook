@@ -128,7 +128,7 @@ class TodoDetailViewModel(
 
             try {
                 val todo = TodoTask(
-                    id = current.id ?: System.currentTimeMillis(), // 新建时简单用时间戳当 id
+                    id = current.id ?: 0L,
                     title = current.title.trim(),
                     description = current.description.trim(),
                     deadline = current.deadline.takeIf { it.isNotBlank() },

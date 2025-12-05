@@ -48,7 +48,8 @@ class TodoAppContainer(context: Context) {
             context.applicationContext,
             TodoDatabase::class.java,
             "todo_db"       // 数据库文件名
-        ).build()
+        ).fallbackToDestructiveMigration(false)
+            .build()
 
     // 2. 用 Dao 创建 Repository
     private val repository = RoomTodoRepository(database.todoDao())

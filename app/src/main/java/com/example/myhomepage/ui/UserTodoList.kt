@@ -200,7 +200,7 @@ fun TodoList(
     val todoBacklogs = uiState.todos.map { it.toBacklog() }
 
     val showChatsList = chats.mapNotNull{ it.toBacklog()}
-    val backlogList = initbacklogList + showChatsList
+    val backlogList = todoBacklogs + showChatsList
     var showButton by remember { mutableStateOf(false) }
     var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
     var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }

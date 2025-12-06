@@ -66,6 +66,7 @@ import com.example.myhomepage.todolist.data.toBacklog
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
+
 @Composable
 fun TodoListTopBar(){
     WeTopBar(title = "待办事项")
@@ -119,58 +120,80 @@ fun TodoListItem(
         color = getTodoColorByType(backlog.type), // 可选：背景色
         shadowElevation = 2.dp // 可选：阴影提升质感
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically, // 垂直居中对齐
-            horizontalArrangement = Arrangement.SpaceBetween // 左右控件贴边，中间占满
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-
-            // 内部用Column/Row+居中布局，适配正方形空间
-            Column(
+            Row(
                 modifier = Modifier
-                    .fillMaxSize() // 填充正方形空间
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
-                verticalArrangement = Arrangement.Center // 垂直居中
+                    .fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically, // 垂直居中对齐
+                horizontalArrangement = Arrangement.SpaceBetween // 左右控件贴边，中间占满
             ) {
 
-                Image(
-                    painterResource(
-                        when (backlog.type) {
-                            TodoType.FILE -> R.drawable.ic_contact_tag
-                            TodoType.CONF -> R.drawable.ic_contact_official
-                            TodoType.MSG -> backlog.avatar
-                            TodoType.OTHER -> R.drawable.ic_photos
-                        }
-                    ),
-                    "avatar",
-                    Modifier
-                        .padding(12.dp, 8.dp, 8.dp, 8.dp)
-                        .size(50.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                )
-                Text(
-                    backlog.title,
-                    fontSize = 20.sp,
-                    color = WeComposeTheme.colors.textPrimary,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1, // 最多两行
-                    overflow = TextOverflow.Ellipsis, // 溢出省略
-                    textAlign = TextAlign.Center // 文字居中
-                )
+                // 内部用Column/Row+居中布局，适配正方形空间
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize() // 填充正方形空间
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
+                    verticalArrangement = Arrangement.Center // 垂直居中
+                ) {
 
-                Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
+                    Image(
+                        painterResource(
+                            when (backlog.type) {
+                                TodoType.FILE -> R.drawable.ic_contact_tag
+                                TodoType.CONF -> R.drawable.ic_contact_official
+                                TodoType.MSG -> backlog.avatar
+                                TodoType.OTHER -> R.drawable.ic_photos
+                            }
+                        ),
+                        "avatar",
+                        Modifier
+                            .padding(12.dp, 8.dp, 8.dp, 8.dp)
+                            .size(50.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                    )
+                    Text(
+                        backlog.title,
+                        fontSize = 20.sp,
+                        color = WeComposeTheme.colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1, // 最多两行
+                        overflow = TextOverflow.Ellipsis, // 溢出省略
+                        textAlign = TextAlign.Center // 文字居中
+                    )
 
-                // 文字：居中显示，限制行数避免溢出
-                Text(
-                    backlog.time,
-                    fontSize = 16.sp,
-                    color = WeComposeTheme.colors.textPrimary,
-                    maxLines = 2, // 最多两行
-                    overflow = TextOverflow.Ellipsis, // 溢出省略
-                    textAlign = TextAlign.Center // 文字居中
-                )
+                    Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
+
+                    // 文字：居中显示，限制行数避免溢出
+                    Text(
+                        backlog.time,
+                        fontSize = 16.sp,
+                        color = WeComposeTheme.colors.textPrimary,
+                        maxLines = 2, // 最多两行
+                        overflow = TextOverflow.Ellipsis, // 溢出省略
+                        textAlign = TextAlign.Center // 文字居中
+                    )
+                }
+            }
+            // 如果 complete == true，在右上角画一个勾
+            if (backlog.complete) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)     // 左上角
+                        .padding(6.dp)
+                        .size(24.dp)
+                        .background(Color(0xFF4CAF50), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✓",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -185,137 +208,6 @@ fun getTodoColorByType(type: TodoType): Color {
         TodoType.OTHER -> Color(0xFFF8E899)
     }
 }
-
-
-//@Composable
-//fun TodoList(
-//    chats: List<Chat>,
-//    listViewModel: TodoListViewModel,       // 列表页 VM
-//    onTodoClick: (Backlog) -> Unit,            // 点某个待办 → 去详情页
-//    addTodo: () -> Unit                  // 点新增 → 去 AddTodoPage
-//) {
-//    val uiState by listViewModel.uiState.collectAsState()
-//
-//    // 业务待办转成 Backlog
-//    val todoBacklogs = uiState.todos.map { it.toBacklog() }
-//    val showChatsList = chats.mapNotNull{ it.toBacklog()}
-//    val backlogList = todoBacklogs + showChatsList
-//
-//    var showButton by remember { mutableStateOf(false) }
-//    var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
-//    var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }
-//    var buttonOffset by remember { mutableStateOf(IntOffset.Zero) }
-//    // 记录当前长按的 backlog
-//    //var longPressedBacklog by remember { mutableStateOf<Backlog?>(null) }
-//    // 保存TodoTask.id
-//    var longPressedTodoId by remember { mutableStateOf<Long?>(null) }
-//
-//
-//    Scaffold(
-//        floatingActionButton = {
-//            FloatingActionButton(onClick = addTodo) {
-//                Text("+",fontSize = 20.sp,) // 简单写个 "+"
-//            }
-//        }
-//    ) { padding ->
-//        Column(
-//            Modifier
-//                .background(WeComposeTheme.colors.background)
-//                .fillMaxSize()
-//        ) {
-//            TodoListTopBar()
-//            LazyVerticalGrid(
-//                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .padding(8.dp),
-//                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
-//                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
-//                contentPadding = PaddingValues(4.dp) // 列表整体内边距
-//            ) {
-//
-//                itemsIndexed(backlogList) { index, backlog ->
-//                    if (backlog.type != TodoType.MSG)
-//                        TodoListItem(
-//                            backlog, Modifier,
-//                            { onTodoClick(backlog) }, { offset ->
-//                                longPressedTodoId = backlog.id       // 记录当前长按的id
-//                                android.util.Log.d("TodoList", "onLongPress backlog.id = ${backlog.id}")
-//                                buttonOffsetLeft = IntOffset(offset.x - 200, offset.y)
-//                                buttonOffset = IntOffset(offset.x - 66, offset.y)
-//                                buttonOffsetRight = IntOffset(offset.x + 70, offset.y)
-//                                showButton = true
-//                            })
-//                    else
-//                        TodoListItem(backlog)
-//
-//
-//                    if (index < backlogList.size - 1) {
-//                        HorizontalDivider(
-//                            Modifier.padding(start = 56.dp),
-//                            color = WeComposeTheme.colors.divider,
-//                            thickness = 0.8f.dp
-//                        )
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-//    if (showButton) {
-//
-//        Popup(
-//            // 按钮偏移位置（基于长按坐标）
-//            offset = buttonOffsetLeft,
-//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-//            onDismissRequest = { showButton = false }
-//        ) {
-//            TodoCompleteButton(
-//                onClick = {
-//                    android.util.Log.d("TodoList", "Complete button clicked, id = $longPressedTodoId")
-//                    // 完成按钮点击逻辑
-//                    longPressedTodoId?.let { id ->
-//                        listViewModel.onToggleCompleted(id)
-//                    }
-//                    showButton = false
-//                }
-//            )
-//        }
-//
-//
-//        Popup(
-//            // 按钮偏移位置（基于长按坐标）
-//            offset = buttonOffset,
-//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-//            onDismissRequest = { showButton = false }
-//        ) {
-//            TodoShareButton(
-//                onClick = {
-//                    // 完成按钮点击逻辑（实现）TODO
-//                    showButton = false
-//                }
-//            )
-//        }
-//
-//        Popup(
-//            // 按钮偏移位置（基于长按坐标）
-//            offset = buttonOffsetRight,
-//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-//            onDismissRequest = { showButton = false }
-//        ) {
-//            TodoDeleteButton(
-//                onClick = {
-//                    // 完成按钮点击逻辑
-//                    longPressedTodoId?.let { id ->
-//                        listViewModel.onDeleteTodo(id)
-//                    }
-//                    showButton = false
-//                }
-//            )
-//        }
-//    }
-//
-//}
 
 @Composable
 fun TodoList(

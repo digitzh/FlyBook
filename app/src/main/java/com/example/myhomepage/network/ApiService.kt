@@ -66,6 +66,17 @@ data class SendMessageData(
     val createdTime: String
 )
 
+// 【新增】历史消息数据结构 (对应文档7中的返回结构)
+@Serializable
+data class MessageVO(
+    val messageId: Long,
+    val conversationId: Long,
+    val senderId: Long,
+    val content: String, // "{\"text\": \"...\"}"
+    val createdTime: String,
+    val seq: Long
+)
+
 class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
@@ -212,6 +223,40 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
         } catch (e: Exception) {
             android.util.Log.e("ApiService", "Send message error", e)
             null
+        }
+    }
+
+    /**
+     * 【新增】获取历史消息
+     * 接口: /api/messages/sync
+     * 参数: conversationId
+     */
+    suspend fun getMessageHistory(userId: String, conversationId: Long): List<MessageVO> = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("$baseUrl/api/messages/sync?conversationId=$conversationId")
+                .get()
+                .addHeader("X-User-Id", userId)
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string() ?: return@withContext emptyList()
+
+            if (response.isSuccessful) {
+                val apiResponse = json.decodeFromString<ApiResponse<List<MessageVO>>>(responseBody)
+                if (apiResponse.code == 0) {
+                    apiResponse.data ?: emptyList()
+                } else {
+                    android.util.Log.e("ApiService", "Get history failed: ${apiResponse.msg}")
+                    emptyList()
+                }
+            } else {
+                android.util.Log.e("ApiService", "HTTP error: ${response.code}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ApiService", "Get history error", e)
+            emptyList()
         }
     }
 }

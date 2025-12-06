@@ -84,60 +84,90 @@ fun ChatList(
 }
 
 // ... ChatListItem 和 unread 函数保持不变 ...
+//@Composable
+//private fun ChatListItem(chat: Chat, modifier: Modifier = Modifier) {
+//    val hasMessages = chat.msgs.isNotEmpty()
+//    val lastMsg = if (hasMessages) chat.msgs.last() else null
+//    val hasUnread = lastMsg?.read == false
+//
+//    Row(
+//        modifier.fillMaxWidth()
+//    ) {
+//        // 群聊显示群头像，单聊显示好友头像
+//        if (chat.isGroupChat && chat.avatarUrl != null) {
+//            AsyncImage(
+//                model = chat.avatarUrl,
+//                contentDescription = chat.displayName,
+//                modifier = Modifier
+//                    .padding(8.dp)
+//                    .size(48.dp)
+//                    .unread(hasUnread, WeComposeTheme.colors.badge)
+//                    .clip(RoundedCornerShape(4.dp)),
+//                contentScale = ContentScale.Crop,
+//                error = painterResource(chat.friend.avatar)
+//            )
+//        } else {
+//            Image(
+//                painterResource(chat.friend.avatar), chat.friend.name,
+//                Modifier
+//                    .padding(8.dp)
+//                    .size(48.dp)
+//                    .unread(hasUnread, WeComposeTheme.colors.badge)
+//                    .clip(RoundedCornerShape(4.dp))
+//            )
+//        }
+//        Column(
+//            Modifier
+//                .weight(1f)
+//                .align(Alignment.CenterVertically)
+//        ) {
+//            Text(chat.displayName, fontSize = 17.sp, color = WeComposeTheme.colors.textPrimary)
+//            Text(
+//                text = lastMsg?.text ?: "暂无消息",
+//                fontSize = 14.sp,
+//                color = WeComposeTheme.colors.textSecondary
+//            )
+//        }
+//        lastMsg?.let { msg ->
+//            Text(
+//                msg.time,
+//                Modifier.padding(8.dp, 8.dp, 12.dp, 8.dp),
+//                fontSize = 11.sp,
+//                color = WeComposeTheme.colors.textSecondary
+//            )
+//        }
+//    }
+//}
+// ... ChatList 函数不变 ...
+
+//@Composable
+// ... ChatList 函数不变 ...
+
 @Composable
 private fun ChatListItem(chat: Chat, modifier: Modifier = Modifier) {
-    val hasMessages = chat.msgs.isNotEmpty()
-    val lastMsg = if (hasMessages) chat.msgs.last() else null
-    val hasUnread = lastMsg?.read == false
+    // 【修改】优先使用 lastContent，解决“只显示最后一条，中间的没了”问题
+    val displayContent = chat.lastContent ?: (if (chat.msgs.isNotEmpty()) chat.msgs.last().text else "暂无消息")
+    val displayTime = chat.lastTime ?: (if (chat.msgs.isNotEmpty()) chat.msgs.last().time else "")
+    val hasUnread = chat.unreadCount > 0
 
-    Row(
-        modifier.fillMaxWidth()
-    ) {
-        // 群聊显示群头像，单聊显示好友头像
+    Row(modifier.fillMaxWidth()) {
+        // 头像部分不变
         if (chat.isGroupChat && chat.avatarUrl != null) {
-            AsyncImage(
-                model = chat.avatarUrl,
-                contentDescription = chat.displayName,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(48.dp)
-                    .unread(hasUnread, WeComposeTheme.colors.badge)
-                    .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop,
-                error = painterResource(chat.friend.avatar)
-            )
+            AsyncImage(model = chat.avatarUrl, contentDescription = chat.displayName, modifier = Modifier.padding(8.dp).size(48.dp).unread(hasUnread, WeComposeTheme.colors.badge).clip(RoundedCornerShape(4.dp)), contentScale = ContentScale.Crop, error = painterResource(chat.friend.avatar))
         } else {
-            Image(
-                painterResource(chat.friend.avatar), chat.friend.name,
-                Modifier
-                    .padding(8.dp)
-                    .size(48.dp)
-                    .unread(hasUnread, WeComposeTheme.colors.badge)
-                    .clip(RoundedCornerShape(4.dp))
-            )
+            Image(painterResource(chat.friend.avatar), chat.friend.name, Modifier.padding(8.dp).size(48.dp).unread(hasUnread, WeComposeTheme.colors.badge).clip(RoundedCornerShape(4.dp)))
         }
-        Column(
-            Modifier
-                .weight(1f)
-                .align(Alignment.CenterVertically)
-        ) {
+
+        Column(Modifier.weight(1f).align(Alignment.CenterVertically)) {
             Text(chat.displayName, fontSize = 17.sp, color = WeComposeTheme.colors.textPrimary)
-            Text(
-                text = lastMsg?.text ?: "暂无消息",
-                fontSize = 14.sp,
-                color = WeComposeTheme.colors.textSecondary
-            )
+            Text(text = displayContent, fontSize = 14.sp, color = WeComposeTheme.colors.textSecondary, maxLines = 1)
         }
-        lastMsg?.let { msg ->
-            Text(
-                msg.time,
-                Modifier.padding(8.dp, 8.dp, 12.dp, 8.dp),
-                fontSize = 11.sp,
-                color = WeComposeTheme.colors.textSecondary
-            )
-        }
+        Text(displayTime, Modifier.padding(8.dp, 8.dp, 12.dp, 8.dp), fontSize = 11.sp, color = WeComposeTheme.colors.textSecondary)
     }
 }
+
+// unread 函数不变 ...
+
 
 fun Modifier.unread(show: Boolean, color: Color) = drawWithContent {
     drawContent()

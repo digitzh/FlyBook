@@ -1,6 +1,7 @@
 package com.example.myhomepage.todolist.presentation
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myhomepage.todolist.domain.TodoTask
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * 待办列表页的 ViewModel
+ * 待办列表页和详情页的 ViewModel
  *
  * 负责：
  * - 从 UseCase 拿到列表数据
@@ -61,6 +62,7 @@ class TodoListViewModel(
     // 点击复选框时调用，切换完成状态
 
     fun onToggleCompleted(id: Long) {
+        //Log.d("DEBUG", "toggle called id = $id")
         viewModelScope.launch {
             try {
                 toggleTodoCompletedUseCase(id)

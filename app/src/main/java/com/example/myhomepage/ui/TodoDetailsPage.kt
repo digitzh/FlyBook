@@ -60,7 +60,6 @@ fun TodoDetailsPage(
     onBack: () -> Unit,
     onEditClick: () -> Unit  // 从这里跳到 AddTodoPage 做编辑
 ) {
-    //val affair = viewModel.initbacklogList.find { it.id == todoId }!!
     val uiState by listViewModel.uiState.collectAsState()
     val task = uiState.todos.firstOrNull { it.id == todoId }
 

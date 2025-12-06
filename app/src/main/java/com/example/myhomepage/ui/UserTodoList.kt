@@ -187,29 +187,164 @@ fun getTodoColorByType(type: TodoType): Color {
 }
 
 
+//@Composable
+//fun TodoList(
+//    chats: List<Chat>,
+//    listViewModel: TodoListViewModel,       // 列表页 VM
+//    onTodoClick: (Backlog) -> Unit,            // 点某个待办 → 去详情页
+//    addTodo: () -> Unit                  // 点新增 → 去 AddTodoPage
+//) {
+//    val uiState by listViewModel.uiState.collectAsState()
+//
+//    // 业务待办转成 Backlog
+//    val todoBacklogs = uiState.todos.map { it.toBacklog() }
+//    val showChatsList = chats.mapNotNull{ it.toBacklog()}
+//    val backlogList = todoBacklogs + showChatsList
+//
+//    var showButton by remember { mutableStateOf(false) }
+//    var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
+//    var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }
+//    var buttonOffset by remember { mutableStateOf(IntOffset.Zero) }
+//    // 记录当前长按的 backlog
+//    //var longPressedBacklog by remember { mutableStateOf<Backlog?>(null) }
+//    // 保存TodoTask.id
+//    var longPressedTodoId by remember { mutableStateOf<Long?>(null) }
+//
+//
+//    Scaffold(
+//        floatingActionButton = {
+//            FloatingActionButton(onClick = addTodo) {
+//                Text("+",fontSize = 20.sp,) // 简单写个 "+"
+//            }
+//        }
+//    ) { padding ->
+//        Column(
+//            Modifier
+//                .background(WeComposeTheme.colors.background)
+//                .fillMaxSize()
+//        ) {
+//            TodoListTopBar()
+//            LazyVerticalGrid(
+//                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .padding(8.dp),
+//                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
+//                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
+//                contentPadding = PaddingValues(4.dp) // 列表整体内边距
+//            ) {
+//
+//                itemsIndexed(backlogList) { index, backlog ->
+//                    if (backlog.type != TodoType.MSG)
+//                        TodoListItem(
+//                            backlog, Modifier,
+//                            { onTodoClick(backlog) }, { offset ->
+//                                longPressedTodoId = backlog.id       // 记录当前长按的id
+//                                android.util.Log.d("TodoList", "onLongPress backlog.id = ${backlog.id}")
+//                                buttonOffsetLeft = IntOffset(offset.x - 200, offset.y)
+//                                buttonOffset = IntOffset(offset.x - 66, offset.y)
+//                                buttonOffsetRight = IntOffset(offset.x + 70, offset.y)
+//                                showButton = true
+//                            })
+//                    else
+//                        TodoListItem(backlog)
+//
+//
+//                    if (index < backlogList.size - 1) {
+//                        HorizontalDivider(
+//                            Modifier.padding(start = 56.dp),
+//                            color = WeComposeTheme.colors.divider,
+//                            thickness = 0.8f.dp
+//                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    if (showButton) {
+//
+//        Popup(
+//            // 按钮偏移位置（基于长按坐标）
+//            offset = buttonOffsetLeft,
+//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
+//            onDismissRequest = { showButton = false }
+//        ) {
+//            TodoCompleteButton(
+//                onClick = {
+//                    android.util.Log.d("TodoList", "Complete button clicked, id = $longPressedTodoId")
+//                    // 完成按钮点击逻辑
+//                    longPressedTodoId?.let { id ->
+//                        listViewModel.onToggleCompleted(id)
+//                    }
+//                    showButton = false
+//                }
+//            )
+//        }
+//
+//
+//        Popup(
+//            // 按钮偏移位置（基于长按坐标）
+//            offset = buttonOffset,
+//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
+//            onDismissRequest = { showButton = false }
+//        ) {
+//            TodoShareButton(
+//                onClick = {
+//                    // 完成按钮点击逻辑（实现）TODO
+//                    showButton = false
+//                }
+//            )
+//        }
+//
+//        Popup(
+//            // 按钮偏移位置（基于长按坐标）
+//            offset = buttonOffsetRight,
+//            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
+//            onDismissRequest = { showButton = false }
+//        ) {
+//            TodoDeleteButton(
+//                onClick = {
+//                    // 完成按钮点击逻辑
+//                    longPressedTodoId?.let { id ->
+//                        listViewModel.onDeleteTodo(id)
+//                    }
+//                    showButton = false
+//                }
+//            )
+//        }
+//    }
+//
+//}
+
 @Composable
 fun TodoList(
     chats: List<Chat>,
     listViewModel: TodoListViewModel,       // 列表页 VM
-    onTodoClick: (Backlog) -> Unit,            // 点某个待办 → 去详情页
-    addTodo: () -> Unit                  // 点新增 → 去 AddTodoPage
+    onTodoClick: (Backlog) -> Unit,         // 点某个待办 → 去详情页
+    addTodo: () -> Unit                     // 点新增 → 去 AddTodoPage
 ) {
     val uiState by listViewModel.uiState.collectAsState()
 
     // 业务待办转成 Backlog
     val todoBacklogs = uiState.todos.map { it.toBacklog() }
 
-    val showChatsList = chats.mapNotNull{ it.toBacklog()}
+    val showChatsList = chats.mapNotNull { it.toBacklog() }
     val backlogList = todoBacklogs + showChatsList
-    var showButton by remember { mutableStateOf(false) }
-    var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
-    var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }
-    var buttonOffset by remember { mutableStateOf(IntOffset.Zero) }
+
+    // 记录当前是否显示三个按钮
+    var showMenu by remember { mutableStateOf(false) }
+
+    // 记录菜单 Popup 的位置（以中心按钮为基准）
+    var menuOffset by remember { mutableStateOf(IntOffset.Zero) }
+
+    //  只记录被长按的 Todo 的 id（真实数据库 ID）
+    var longPressedTodoId by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = addTodo) {
-                Text("+",fontSize = 20.sp,) // 简单写个 "+"
+                Text("+", fontSize = 20.sp)
             }
         }
     ) { padding ->
@@ -217,88 +352,107 @@ fun TodoList(
             Modifier
                 .background(WeComposeTheme.colors.background)
                 .fillMaxSize()
+                .padding(padding)
         ) {
             TodoListTopBar()
+
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
-                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
-                contentPadding = PaddingValues(4.dp) // 列表整体内边距
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(4.dp)
             ) {
 
                 itemsIndexed(backlogList) { index, backlog ->
-                    if (backlog.type != TodoType.MSG)
-                        TodoListItem(backlog, Modifier,
-                            {onTodoClick(backlog)},{offset->
-                                buttonOffsetLeft = IntOffset(offset.x-200,offset.y)
-                                buttonOffset = IntOffset(offset.x-66,offset.y)
-                                buttonOffsetRight = IntOffset(offset.x+70,offset.y)
-                                showButton = true
-                            })
-                    else
-                        TodoListItem(backlog)
-
-                    if (index < backlogList.size - 1) {
-                        HorizontalDivider(
-                            Modifier.padding(start = 56.dp),
-                            color = WeComposeTheme.colors.divider,
-                            thickness = 0.8f.dp
+                    if (backlog.type != TodoType.MSG) {
+                        TodoListItem(
+                            backlog = backlog,
+                            modifier = Modifier,
+                            itemTodoClick = { onTodoClick(backlog) },
+                            onLongPress = { offset ->
+                                //  记住被长按的待办的 id
+                                longPressedTodoId = backlog.id
+//                                android.util.Log.d(
+//                                    "TodoList",
+//                                    "onLongPress backlog.id = ${backlog.id}, offset = $offset"
+//                                )
+                                // 以长按的位置为中心，稍微往上挪一点
+                                menuOffset = IntOffset(
+                                    x = offset.x.toInt() - 205,
+                                    y = offset.y.toInt() + 50
+                                )
+                                showMenu = true
+                            }
                         )
+                    } else {
+                        // 聊天产生的 Backlog，暂不支持长按菜单
+                        TodoListItem(backlog)
                     }
                 }
             }
         }
     }
 
-    if (showButton) {
-
+    // 一个 Popup，里面排三个按钮，避免多个 Popup 互相覆盖/抢点击
+    if (showMenu) {
         Popup(
-            // 按钮偏移位置（基于长按坐标）
-            offset = buttonOffsetLeft,
-            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-            onDismissRequest = { showButton = false }
+            offset = menuOffset,
+            onDismissRequest = { showMenu = false }
         ) {
-            TodoCompleteButton(
-                onClick = {
-                    // 完成按钮点击逻辑（实现）TODO
-                    showButton = false
-                }
-            )
-        }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    //  完成
+                    TodoCompleteButton(
+                        onClick = {
+//                            android.util.Log.d(
+//                                "TodoList",
+//                                "Complete button clicked, id = $longPressedTodoId"
+//                            )
 
-        Popup(
-            // 按钮偏移位置（基于长按坐标）
-            offset = buttonOffset,
-            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-            onDismissRequest = { showButton = false }
-        ) {
-            TodoShareButton(
-                onClick = {
-                    // 完成按钮点击逻辑（实现）TODO
-                    showButton = false
-                }
-            )
-        }
+                            longPressedTodoId?.let { id ->
+                                listViewModel.onToggleCompleted(id)
+//                                android.util.Log.d(
+//                                    "TodoList",
+//                                    "called onToggleCompleted($id)"
+//                                )
+                            }
+                            showMenu = false
+                        }
+                    )
 
-        Popup(
-            // 按钮偏移位置（基于长按坐标）
-            offset = buttonOffsetRight,
-            // 点击Popup外部不自动隐藏（靠外层空白点击隐藏）
-            onDismissRequest = { showButton = false }
-        ) {
-            TodoDeleteButton(
-                onClick = {
-                    // 完成按钮点击逻辑（实现）TODO
-                    showButton = false
+                    // 分享：先只关弹窗
+                    TodoShareButton(
+                        onClick = {
+                            //android.util.Log.d("TodoList", "Share button clicked")
+                            showMenu = false
+                        }
+                    )
+
+                    //  删除
+                    TodoDeleteButton(
+                        onClick = {
+//                            android.util.Log.d(
+//                                "TodoList",
+//                                "Delete button clicked, id = $longPressedTodoId"
+//                            )
+                            longPressedTodoId?.let { id ->
+                                listViewModel.onDeleteTodo(id)
+                            }
+                            showMenu = false
+                        }
+                    )
                 }
-            )
+
         }
     }
-
 }
+
+
 
 
 @Composable

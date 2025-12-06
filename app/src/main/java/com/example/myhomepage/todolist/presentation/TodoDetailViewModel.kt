@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import com.example.myhomepage.ui.theme.TodoType
 
 /**
- * 待办详情页（新建 & 编辑共用）的 ViewModel。
+ * 待办编辑页（新建 & 编辑共用）的 ViewModel
  *
  * 约定：
  * - newTask = true 表示新建，id 在点击保存时生成

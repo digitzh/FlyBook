@@ -85,17 +85,17 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     )
   )
 
-  val initbacklogList by mutableStateOf(
-      listOf(
-        Backlog("wenjian1", "周报", "完成周报", "2025-12-03", TodoType.FILE),
-        Backlog("wenjian2", "接口设计文档", "完成接口设计文档","2025-12-05",TodoType.FILE),
-        Backlog("wenjian3", "数据分析表", "完成数据分析表","2025-12-08",TodoType.FILE),
-        Backlog("trans1", "下午2点开会", "项目讨论","2025-12-01",TodoType.CONF),
-        Backlog("trans2", "下午2点开会", "项目讨论","2025-12-02",TodoType.CONF),
-        Backlog("other2", "原神启动", "原神启动！！！","2025-12-01",TodoType.OTHER),
-        Backlog("other1", "原神启动", "原神启动！！！","2025-12-02",TodoType.OTHER),
-      )
-  )
+//  val initbacklogList by mutableStateOf(
+//      listOf(
+//        Backlog("wenjian1", "周报", "完成周报", "2025-12-03", TodoType.FILE),
+//        Backlog("wenjian2", "接口设计文档", "完成接口设计文档","2025-12-05",TodoType.FILE),
+//        Backlog("wenjian3", "数据分析表", "完成数据分析表","2025-12-08",TodoType.FILE),
+//        Backlog("trans1", "下午2点开会", "项目讨论","2025-12-01",TodoType.CONF),
+//        Backlog("trans2", "下午2点开会", "项目讨论","2025-12-02",TodoType.CONF),
+//        Backlog("other2", "原神启动", "原神启动！！！","2025-12-01",TodoType.OTHER),
+//        Backlog("other1", "原神启动", "原神启动！！！","2025-12-02",TodoType.OTHER),
+//      )
+//  )
 
   fun switchTheme() {
     theme = when (theme) {
@@ -216,8 +216,8 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       }
     }
   }
-  
-  fun changeBacklog(affair: Backlog){
-      if (affair.complete== false) affair.complete = true
-  }
+
+//  fun changeBacklog(affair: Backlog){
+//      if (affair.complete== false) affair.complete = true
+//  }
 }

@@ -61,7 +61,10 @@ import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
 import com.example.myhomepage.ui.theme.TodoType
-
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
+import com.example.myhomepage.todolist.data.toBacklog
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Composable
 fun TodoListTopBar(){
@@ -183,10 +186,21 @@ fun getTodoColorByType(type: TodoType): Color {
     }
 }
 
+
 @Composable
-fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit, addTodo : () -> Unit ) {
+fun TodoList(
+    chats: List<Chat>,
+    listViewModel: TodoListViewModel,       // 列表页 VM
+    onTodoClick: (Backlog) -> Unit,            // 点某个待办 → 去详情页
+    addTodo: () -> Unit                  // 点新增 → 去 AddTodoPage
+) {
+    val uiState by listViewModel.uiState.collectAsState()
+
+    // 业务待办转成 Backlog
+    val todoBacklogs = uiState.todos.map { it.toBacklog() }
+
     val showChatsList = chats.mapNotNull{ it.toBacklog()}
-    val backlogList = initbacklogList + showChatsList
+    val backlogList = todoBacklogs + showChatsList
     var showButton by remember { mutableStateOf(false) }
     var buttonOffsetLeft by remember { mutableStateOf(IntOffset.Zero) }
     var buttonOffsetRight by remember { mutableStateOf(IntOffset.Zero) }
@@ -194,7 +208,7 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { addTodo() }) {
+            FloatingActionButton(onClick = addTodo) {
                 Text("+",fontSize = 20.sp,) // 简单写个 "+"
             }
         }

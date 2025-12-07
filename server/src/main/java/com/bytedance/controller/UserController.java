@@ -1,11 +1,10 @@
 package com.bytedance.controller;
 
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.bytedance.common.Result;
 import com.bytedance.dto.LoginRequest;
-import com.bytedance.entity.User;
 import com.bytedance.service.IUserService;
+import com.bytedance.usecase.user.LoginUserUseCase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,14 +21,11 @@ public class UserController {
 
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        String token = userService.login(request.getUsername(), request.getPassword());
-
-        // 返回 Token 和 用户信息
-        User user = userService.getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername()));
+        LoginUserUseCase.LoginResult loginResult = userService.login(request.getUsername(), request.getPassword());
 
         Map<String, Object> data = new HashMap<>();
-        data.put("token", token);
-        data.put("userInfo", user);
+        data.put("token", loginResult.getToken());
+        data.put("userInfo", loginResult.getUser());
 
         return Result.success(data);
     }

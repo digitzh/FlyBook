@@ -4,44 +4,21 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
@@ -53,19 +30,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
-import com.example.myhomepage.data.User
-import com.example.myhomepage.ui.theme.WeComposeTheme
 import com.example.myhomepage.R
-import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
-import com.example.myhomepage.ui.theme.TodoType
-import com.example.myhomepage.todolist.presentation.TodoListViewModel
 import com.example.myhomepage.todolist.data.toBacklog
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
+import com.example.myhomepage.ui.theme.TodoType
+import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
 fun TodoListTopBar(){
@@ -82,27 +54,18 @@ fun TodoListItem(
     var rowGlobalPosition by remember { mutableStateOf(Offset.Zero) }
     var rowSize by remember { mutableStateOf(IntOffset.Zero) }
 
-    // 计算Row正中间的坐标（并调整按钮位置，避免按钮中心和Row中心重叠）
     val rowCenterOffset by remember(rowGlobalPosition, rowSize) {
         mutableStateOf(
             IntOffset(
-                // Row左边界 + Row宽度/2 - 按钮宽度/2（让按钮水平居中）
                 x = rowGlobalPosition.x.toInt() + (rowSize.x / 2),
-                // Row上边界 + Row高度/2 - 按钮高度/2
                 y = rowGlobalPosition.y.toInt() + (rowSize.y / 2)
             )
         )
     }
-    // 外层用Surface实现圆角+正方形：
-    // 1. aspectRatio(1f) → 宽高比1:1（正方形）
-    // 2. shape → 圆角形状
-    // 3. fillMaxWidth() → 填充列宽（网格中每列宽度一致，高度=宽度→正方形）
     Surface(
         modifier = modifier
             .onGloballyPositioned { layoutCoordinates ->
-                // 获取Row在屏幕中的全局坐标（IntOffset）
                 rowGlobalPosition = layoutCoordinates.positionInWindow()
-                // 获取Row的尺寸（宽度x, 高度y）
                 rowSize = IntOffset(layoutCoordinates.size.width, layoutCoordinates.size.height)
             }
             .pointerInput(Unit) {
@@ -114,31 +77,25 @@ fun TodoListItem(
                 )
             }
             .fillMaxWidth()
-            .aspectRatio(1f) // 关键：宽高比1:1，实现正方形
-            .padding(4.dp), // 可选：Item之间的间距
-        shape = RoundedCornerShape(12.dp), // 圆角大小（按需调整）
-        color = getTodoColorByType(backlog.type), // 可选：背景色
-        shadowElevation = 2.dp // 可选：阴影提升质感
+            .aspectRatio(1f)
+            .padding(4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = getTodoColorByType(backlog.type),
+        shadowElevation = 2.dp
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier
-                    .fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically, // 垂直居中对齐
-                horizontalArrangement = Arrangement.SpaceBetween // 左右控件贴边，中间占满
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
-                // 内部用Column/Row+居中布局，适配正方形空间
                 Column(
                     modifier = Modifier
-                        .fillMaxSize() // 填充正方形空间
+                        .fillMaxSize()
                         .padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
-                    verticalArrangement = Arrangement.Center // 垂直居中
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-
                     Image(
                         painterResource(
                             when (backlog.type) {
@@ -159,29 +116,25 @@ fun TodoListItem(
                         fontSize = 20.sp,
                         color = WeComposeTheme.colors.textPrimary,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1, // 最多两行
-                        overflow = TextOverflow.Ellipsis, // 溢出省略
-                        textAlign = TextAlign.Center // 文字居中
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
-
-                    // 文字：居中显示，限制行数避免溢出
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         backlog.time,
                         fontSize = 16.sp,
                         color = WeComposeTheme.colors.textPrimary,
-                        maxLines = 2, // 最多两行
-                        overflow = TextOverflow.Ellipsis, // 溢出省略
-                        textAlign = TextAlign.Center // 文字居中
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
-            // 如果 complete == true，在右上角画一个勾
             if (backlog.complete) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopStart)     // 左上角
+                        .align(Alignment.TopStart)
                         .padding(6.dp)
                         .size(24.dp)
                         .background(Color(0xFF4CAF50), CircleShape),
@@ -199,7 +152,6 @@ fun TodoListItem(
     }
 }
 
-
 fun getTodoColorByType(type: TodoType): Color {
     return when (type) {
         TodoType.FILE -> Color(0xDEEBF7FF)
@@ -212,25 +164,19 @@ fun getTodoColorByType(type: TodoType): Color {
 @Composable
 fun TodoList(
     chats: List<Chat>,
-    listViewModel: TodoListViewModel,       // 列表页 VM
-    onTodoClick: (Backlog) -> Unit,         // 点某个待办 → 去详情页
-    addTodo: () -> Unit                     // 点新增 → 去 AddTodoPage
+    listViewModel: TodoListViewModel,
+    onTodoClick: (Backlog) -> Unit,
+    addTodo: () -> Unit
 ) {
     val uiState by listViewModel.uiState.collectAsState()
 
-    // 业务待办转成 Backlog
+    // 合并数据库任务和聊天未读
     val todoBacklogs = uiState.todos.map { it.toBacklog() }
-
     val showChatsList = chats.mapNotNull { it.toBacklog() }
     val backlogList = todoBacklogs + showChatsList
 
-    // 记录当前是否显示三个按钮
     var showMenu by remember { mutableStateOf(false) }
-
-    // 记录菜单 Popup 的位置（以中心按钮为基准）
     var menuOffset by remember { mutableStateOf(IntOffset.Zero) }
-
-    //  只记录被长按的 Todo 的 id（真实数据库 ID）
     var longPressedTodoId by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
@@ -247,7 +193,6 @@ fun TodoList(
                 .padding(padding)
         ) {
             TodoListTopBar()
-
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
@@ -257,7 +202,6 @@ fun TodoList(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(4.dp)
             ) {
-
                 itemsIndexed(backlogList) { index, backlog ->
                     if (backlog.type != TodoType.MSG) {
                         TodoListItem(
@@ -265,13 +209,7 @@ fun TodoList(
                             modifier = Modifier,
                             itemTodoClick = { onTodoClick(backlog) },
                             onLongPress = { offset ->
-                                //  记住被长按的待办的 id
                                 longPressedTodoId = backlog.id
-//                                android.util.Log.d(
-//                                    "TodoList",
-//                                    "onLongPress backlog.id = ${backlog.id}, offset = $offset"
-//                                )
-                                // 以长按的位置为中心，稍微往上挪一点
                                 menuOffset = IntOffset(
                                     x = offset.x.toInt() - 205,
                                     y = offset.y.toInt() + 50
@@ -280,7 +218,6 @@ fun TodoList(
                             }
                         )
                     } else {
-                        // 聊天产生的 Backlog，暂不支持长按菜单
                         TodoListItem(backlog)
                     }
                 }
@@ -288,98 +225,47 @@ fun TodoList(
         }
     }
 
-    // 一个 Popup，里面排三个按钮，避免多个 Popup 互相覆盖/抢点击
     if (showMenu) {
         Popup(
             offset = menuOffset,
             onDismissRequest = { showMenu = false }
         ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    //  完成
-                    TodoCompleteButton(
-                        onClick = {
-//                            android.util.Log.d(
-//                                "TodoList",
-//                                "Complete button clicked, id = $longPressedTodoId"
-//                            )
-
-                            longPressedTodoId?.let { id ->
-                                listViewModel.onToggleCompleted(id)
-//                                android.util.Log.d(
-//                                    "TodoList",
-//                                    "called onToggleCompleted($id)"
-//                                )
-                            }
-                            showMenu = false
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TodoCompleteButton(
+                    onClick = {
+                        longPressedTodoId?.let { id ->
+                            listViewModel.onToggleCompleted(id)
                         }
-                    )
-
-                    // 分享：先只关弹窗
-                    TodoShareButton(
-                        onClick = {
-                            //android.util.Log.d("TodoList", "Share button clicked")
-                            showMenu = false
+                        showMenu = false
+                    }
+                )
+                TodoDeleteButton(
+                    onClick = {
+                        longPressedTodoId?.let { id ->
+                            listViewModel.onDeleteTodo(id)
                         }
-                    )
-
-                    //  删除
-                    TodoDeleteButton(
-                        onClick = {
-//                            android.util.Log.d(
-//                                "TodoList",
-//                                "Delete button clicked, id = $longPressedTodoId"
-//                            )
-                            longPressedTodoId?.let { id ->
-                                listViewModel.onDeleteTodo(id)
-                            }
-                            showMenu = false
-                        }
-                    )
-                }
-
+                        showMenu = false
+                    }
+                )
+            }
         }
     }
 }
-
-
-
 
 @Composable
 fun TodoCompleteButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(50.dp) // 圆形按钮大小
-            .background(
-                color = Color(0xFF90EE90), // 浅绿色（淡绿）
-                shape = CircleShape // 圆形
-            )
-            .clickable { onClick() } // 点击事件
+            .size(50.dp)
+            .background(color = Color(0xFF90EE90), shape = CircleShape)
+            .clickable { onClick() }
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            // 对号图标
-            Text(
-                text = "\u2714",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            // 完成文字
-            Text(
-                text = "完成",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-        }
+        Text(text = "✓", color = Color.White, fontSize = 18.sp)
     }
 }
 
@@ -387,93 +273,12 @@ fun TodoCompleteButton(onClick: () -> Unit) {
 fun TodoDeleteButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(50.dp) // 圆形按钮大小
-            .background(
-                color = Color(0xFFF8B4B4),
-                shape = CircleShape // 圆形
-            )
-            .clickable { onClick() } // 点击事件
+            .size(50.dp)
+            .background(color = Color(0xFFF8B4B4), shape = CircleShape)
+            .clickable { onClick() }
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            // 对号图标
-            Text(
-                text = "\u2718",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            // 完成文字
-            Text(
-                text = "删除",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-        }
+        Text(text = "✕", color = Color.White, fontSize = 18.sp)
     }
 }
-
-@Composable
-fun TodoShareButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(50.dp) // 圆形按钮大小
-            .background(
-                color = Color(0xFFE1E15A),
-                shape = CircleShape // 圆形
-            )
-            .clickable { onClick() } // 点击事件
-            .padding(4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            // 对号图标
-            Text(
-                text = "\u269D",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            // 完成文字
-            Text(
-                text = "分享",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 12.sp
-            )
-        }
-    }
-}
-
-//@Preview(showBackground = true)
-//@Composable
-//fun ContactListItemPreview() {
-//    WeComposeTheme {
-//        Box {
-//            TodoListItem(
-//                Backlog("wenjian1", "周报","完成周报","2025-12-03", TodoType.MSG ),
-//            )
-//        }
-//    }
-//}
-
-//@Preview(showBackground = true)
-//@Composable
-//fun ContactListPreview() {
-//    val contacts = listOf<User>(
-//        User("zhangsan", "张三", R.drawable.avatar_zhangsan),
-//        User("lisi", "李四", R.drawable.avatar_lisi),
-//    )
-//    TodoList(contacts)
-//}
-

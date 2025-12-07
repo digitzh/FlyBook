@@ -9,9 +9,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [UserEntity::class], version = 1, exportSchema = false)
+// 【修改】entities 数组中增加 MessageEntity::class，version 升级为 2
+@Database(entities = [UserEntity::class, MessageEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    // 【新增】暴露 messageDao
+    abstract fun messageDao(): MessageDao
 
     companion object {
         @Volatile
@@ -19,11 +22,14 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
+                // 【注意】由于修改了数据库结构，开发阶段建议直接 fallbackToDestructiveMigration()
+                // 这样数据库版本不匹配时会自动清空重建，避免崩溃
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "flybook_database"
                 )
+                    .fallbackToDestructiveMigration() // 【新增】开发阶段允许破坏性迁移
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
@@ -43,30 +49,14 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         suspend fun populateDatabase(userDao: UserDao) {
-            // 初始化测试用户数据（参考服务端SQL）
+            // ... 原有的初始化用户代码保持不变 ...
             val users = listOf(
-                UserEntity(
-                    userId = 1001,
-                    username = "ZhangSan",
-                    avatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang",
-                    password = null
-                ),
-                UserEntity(
-                    userId = 1002,
-                    username = "LiSi",
-                    avatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=Li",
-                    password = null
-                ),
-                UserEntity(
-                    userId = 1003,
-                    username = "WangWu",
-                    avatarUrl = "https://api.dicebear.com/7.x/avataaars/svg?seed=Wang",
-                    password = null
-                )
+                UserEntity(1001, "ZhangSan", "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang"),
+                UserEntity(1002, "LiSi", "https://api.dicebear.com/7.x/avataaars/svg?seed=Li"),
+                UserEntity(1003, "WangWu", "https://api.dicebear.com/7.x/avataaars/svg?seed=Wang"),
+                UserEntity(1004, "ZhaoLiu", "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhao")
             )
             userDao.insertUsers(users)
         }
     }
 }
-
-

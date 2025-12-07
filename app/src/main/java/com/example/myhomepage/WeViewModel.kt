@@ -14,8 +14,9 @@ import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.Msg
 import com.example.myhomepage.data.User
 import com.example.myhomepage.database.AppDatabase
-import com.example.myhomepage.database.MessageEntity
 import com.example.myhomepage.database.UserEntity
+import com.example.myhomepage.database.MessageDao
+import com.example.myhomepage.database.MessageEntity
 import com.example.myhomepage.network.ApiService
 import com.example.myhomepage.network.ConversationVO
 import com.example.myhomepage.network.WebSocketManager
@@ -35,16 +36,6 @@ import java.util.Locale
 @Serializable
 data class WsContent(val text: String)
 
-
-//// 【新增】WebSocket 消息结构
-//@Serializable
-//data class WsMessage(
-//  val msgType: Int,
-//  val conversationId: Long,
-//  val senderId: Long,
-//  val content: String, // 这是一个嵌套的 JSON 字符串
-//  val createdTime: Long
-//)
 // 【修改】补充 messageId 字段
 @Serializable
 data class WsMessage(
@@ -79,16 +70,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
   // 用户列表（从数据库读取）
   val users = userDao.getAllUsers()
 
-//  init {
-//    // 【新增】监听 WebSocket 消息
-//    viewModelScope.launch {
-//      WebSocketManager.getInstance().receivedMessages.collect { jsonStr ->
-//        if (!jsonStr.isNullOrBlank()) {
-//          handleWebSocketMessage(jsonStr)
-//        }
-//      }
-//    }
-//  }
     init {
       // 1. WebSocket 监听
       viewModelScope.launch {
@@ -124,17 +105,19 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     listOf<Chat>()
   )
 
+  // 【修改】ID 改为 Long 类型 (使用负数模拟静态数据)
   val initbacklogList by mutableStateOf(
     listOf(
-      Backlog("wenjian1", "周报", "完成周报", "2025-12-03", TodoType.FILE),
-      Backlog("wenjian2", "接口设计文档", "完成接口设计文档", "2025-12-05", TodoType.FILE),
-      Backlog("wenjian3", "数据分析表", "完成数据分析表", "2025-12-08", TodoType.FILE),
-      Backlog("trans1", "下午2点开会", "项目讨论", "2025-12-01", TodoType.CONF),
-      Backlog("trans2", "下午2点开会", "项目讨论", "2025-12-02", TodoType.CONF),
-      Backlog("other2", "原神启动", "原神启动！！！", "2025-12-01", TodoType.OTHER),
-      Backlog("other1", "原神启动", "原神启动！！！", "2025-12-02", TodoType.OTHER),
+      Backlog(-1L, "周报", "完成周报", "2025-12-03", TodoType.FILE),
+      Backlog(-2L, "接口设计文档", "完成接口设计文档", "2025-12-05", TodoType.FILE),
+      Backlog(-3L, "数据分析表", "完成数据分析表", "2025-12-08", TodoType.FILE),
+      Backlog(-4L, "下午2点开会", "项目讨论", "2025-12-01", TodoType.CONF),
+      Backlog(-5L, "下午2点开会", "项目讨论", "2025-12-02", TodoType.CONF),
+      Backlog(-6L, "原神启动", "原神启动！！！", "2025-12-01", TodoType.OTHER),
+      Backlog(-7L, "原神启动", "原神启动！！！", "2025-12-02", TodoType.OTHER),
     )
   )
+
 
   fun switchTheme() {
     theme = when (theme) {
@@ -143,55 +126,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-//  // 【关键新增】同步历史消息
-//  fun syncChatHistory(conversationId: Long) {
-//    val userId = currentUserId ?: return
-//    viewModelScope.launch {
-//      val remoteMessages = apiService.getMessageHistory(userId, conversationId)
-//      if (remoteMessages.isNotEmpty()) {
-//        val parser = Json { ignoreUnknownKeys = true }
-//        // 文档返回示例: "2025-12-02T19:46:23"
-//        val serverFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-//        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-//
-//        remoteMessages.forEach { msgVo ->
-//          val contentText = try {
-//            val contentObj = parser.decodeFromString<WsContent>(msgVo.content)
-//            contentObj.text
-//          } catch (e: Exception) { "[不支持的消息]" }
-//
-//          var timestamp = System.currentTimeMillis()
-//          var displayTime = timeFormat.format(Date())
-//
-//          try {
-//            val date = serverFormat.parse(msgVo.createdTime)
-//            if (date != null) {
-//              timestamp = date.time
-//              displayTime = timeFormat.format(date)
-//            }
-//          } catch (e: Exception) { }
-//
-//          // 简单去重
-//          val existing = messageDao.getMessagesByConversationId(conversationId).find {
-//            it.content == contentText && it.senderId == msgVo.senderId
-//          }
-//
-//          if (existing == null) {
-//            val entity = MessageEntity(
-//              conversationId = conversationId,
-//              senderId = msgVo.senderId,
-//              content = contentText,
-//              time = displayTime,
-//              timestamp = timestamp
-//            )
-//            messageDao.insertMessage(entity)
-//          }
-//        }
-//      }
-//      // 无论是否拉取到新消息，都强制从本地数据库重新加载到内存，确保 UI 显示全量数据
-//      reloadMessagesFromDb(conversationId)
-//    }
-//  }
 // 【修改】同步历史消息：保存 messageId
 fun syncChatHistory(conversationId: Long) {
   val userId = currentUserId ?: return
@@ -307,39 +241,6 @@ fun syncChatHistory(conversationId: Long) {
     }
   }
 
-//  /**
-//   * 【修改】发送消息
-//   * 发送成功后，保存到本地数据库
-//   */
-//  fun boom(chat: Chat, msg: String) {
-//    val cid = chat.conversationId
-//    val uid = currentUserId
-//
-//    if (cid != null && uid != null) {
-//      viewModelScope.launch {
-//        val result = apiService.sendMessage(uid, cid, msg)
-//        if (result != null) {
-//          val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-//
-//          // 1. UI 上屏
-//          chat.msgs.add(Msg(User.Me, msg, timeStr).apply { read = true })
-//
-//          // 2. 【新增】保存到本地数据库
-//          val entity = MessageEntity(
-//            conversationId = cid,
-//            senderId = uid.toLong(),
-//            content = msg,
-//            time = timeStr,
-//            timestamp = System.currentTimeMillis()
-//          )
-//          messageDao.insertMessage(entity)
-//
-//        } else {
-//          android.util.Log.e("WeViewModel", "Send message failed")
-//        }
-//      }
-//    }
-//  }
 // 【修改】发送消息：保存服务端返回的 messageId
 fun boom(chat: Chat, msg: String) {
   val cid = chat.conversationId
@@ -366,114 +267,13 @@ fun boom(chat: Chat, msg: String) {
 }
 
   /**
-   * 刷新会话列表（从服务端获取）
-   * 【修改说明】这里加入了合并逻辑，防止覆盖掉本地已有的聊天记录
-   */
-//  fun refreshConversationList() {
-//    val userId = currentUserId
-//    if (userId == null) return
-//
-//    viewModelScope.launch {
-//      try {
-//        val conversationList = apiService.getConversationList(userId)
-//
-//        // 使用 map 处理：如果本地已有该会话，则复用对象（保留聊天记录），否则创建新对象
-//        val newChats = conversationList.map { vo ->
-//          // 1. 查找内存中是否已有该会话
-//          val existingChat = chats.find { it.conversationId == vo.conversationId }
-//
-//          if (existingChat != null) {
-//            // 2. 如果有，更新它的基础属性 (保留 existingChat.msgs 不变)
-//            existingChat.name = vo.name
-//            existingChat.avatarUrl = vo.avatarUrl
-//
-//            // 3. 特殊处理：如果本地完全没消息，但服务端列表显示有消息（比如刚登录还没进过聊天页）
-//            // 我们可以把这“最后一条”补进去作为摘要
-//            if (existingChat.msgs.isEmpty() && !vo.lastMsgContent.isNullOrBlank()) {
-//              existingChat.msgs.add(
-//                Msg(
-//                  existingChat.friend,
-//                  vo.lastMsgContent,
-//                  vo.lastMsgTime ?: ""
-//                ).apply { read = vo.unreadCount == 0 }
-//              )
-//            }
-//
-//            // 返回旧对象（关键！）
-//            existingChat
-//          } else {
-//            // 3. 如果没有，则是新会话，创建新对象
-//            convertConversationVOToChat(vo)
-//          }
-//        }
-//
-//        // 更新列表状态
-//        chats = newChats
-//
-//      } catch (e: Exception) {
-//        android.util.Log.e("WeViewModel", "Refresh conversation list error", e)
-//      }
-//    }
-//  }
-
-  /**
-   * 【修改】将ConversationVO转换为Chat对象
-   * 现在需要从数据库加载历史消息
-   */
-//  private suspend fun convertConversationVOToChat(vo: ConversationVO): Chat {
-//    val friend = if (vo.type == 2) {
-//      User("group_${vo.conversationId}", vo.name ?: "群聊", R.drawable.avatar_me)
-//    } else {
-//      val friendIdLong = if (vo.name == "ZhangSan") 1001L else if (vo.name == "LiSi") 1002L else 0L
-//      val avatar = getAvatarForUser(friendIdLong)
-//      User("user_${vo.conversationId}", vo.name ?: "用户", avatar)
-//    }
-//
-//    // 1. 从本地数据库加载该会话的历史消息
-//    val dbMessages = messageDao.getMessagesByConversationId(vo.conversationId)
-//
-//    val msgs = mutableStateListOf<Msg>()
-//
-//    // 2. 将数据库实体转换为 UI 模型 (Msg)
-//    dbMessages.forEach { entity ->
-//      val senderUser = if (entity.senderId.toString() == currentUserId) {
-//        User.Me
-//      } else {
-//        User(
-//          entity.senderId.toString(),
-//          getNameForUser(entity.senderId),
-//          getAvatarForUser(entity.senderId)
-//        )
-//      }
-//      msgs.add(Msg(senderUser, entity.content, entity.time).apply { read = true })
-//    }
-//
-//    // 3. 如果数据库是空的（可能是第一次加载），但服务端列表里有摘要，把摘要补进去
-//    // 注意：这里最好也把摘要存入数据库，避免下次还是空的
-//    if (msgs.isEmpty() && !vo.lastMsgContent.isNullOrBlank()) {
-//      val timeStr = vo.lastMsgTime ?: ""
-//      msgs.add(
-//        Msg(friend, vo.lastMsgContent, timeStr).apply { read = vo.unreadCount == 0 }
-//      )
-//      // 可选：将这条摘要也存入库，防止丢失
-//    }
-//
-//    return Chat(
-//      friend = friend,
-//      msgs = msgs,
-//      conversationId = vo.conversationId,
-//      type = vo.type,
-//      name = vo.name,
-//      avatarUrl = vo.avatarUrl
-//    )
-//  }
-
-  /**
-   * 创建群聊
+   * 创建会话 (群聊或单聊)
+   * 【修改】增加 type 参数
    */
   fun createGroupConversation(
     name: String,
     selectedUserIds: List<Long>,
+    type: Int, // 新增参数
     onSuccess: () -> Unit,
     onError: (String) -> Unit
   ) {
@@ -491,14 +291,13 @@ fun boom(chat: Chat, msg: String) {
           return@launch
         }
 
-        // 1. 创建会话
-        val conversationId = apiService.createConversation(userId, 2, name)
+        // 【修改】使用传入的 type
+        val conversationId = apiService.createConversation(userId, type, name)
         if (conversationId == null) {
           onError("创建会话失败")
           return@launch
         }
 
-        // 2. 添加成员
         val otherUserIds = selectedUserIds.filter { it != userIdLong }
         if (otherUserIds.isNotEmpty()) {
           val success = apiService.addMembersToConversation(userId, conversationId, otherUserIds)
@@ -508,7 +307,6 @@ fun boom(chat: Chat, msg: String) {
           }
         }
 
-        // 3. 刷新
         refreshConversationList()
         onSuccess()
       } catch (e: Exception) {
@@ -517,118 +315,6 @@ fun boom(chat: Chat, msg: String) {
     }
   }
 
-  fun changeBacklog(affair: Backlog) {
-    if (affair.complete == false) affair.complete = true
-  }
-
-  /**
-   * 【新增】处理 WebSocket 消息
-   */
-//  private fun handleWebSocketMessage(jsonStr: String) {
-//    try {
-//      val parser = Json { ignoreUnknownKeys = true }
-//      val wsMsg = parser.decodeFromString<WsMessage>(jsonStr)
-//
-//      // 找到对应的会话
-//      val chat = chats.find { it.conversationId == wsMsg.conversationId }
-//
-//      if (chat == null) {
-//        // 新会话或未加载的会话，刷新列表
-//        refreshConversationList()
-//        return
-//      }
-//
-//      if (wsMsg.msgType == 1) {
-//        // 文本消息
-//        val contentObj = parser.decodeFromString<WsContent>(wsMsg.content)
-//
-//        // 判断是否是自己发的（多端同步）
-//        val isMe = wsMsg.senderId.toString() == currentUserId
-//
-//        val senderUser = if (isMe) {
-//          User.Me
-//        } else {
-//          // 构造发送者用户
-//          val name = getNameForUser(wsMsg.senderId)
-//          val avatar = getAvatarForUser(wsMsg.senderId)
-//          User(wsMsg.senderId.toString(), name, avatar)
-//        }
-//
-//        // 格式化时间
-//        val date = Date(wsMsg.createdTime)
-//        val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
-//
-//        // 添加消息到 UI
-//        // 简单去重：如果是自己发的且最后一条消息内容相同，则不重复添加（避免 boom 接口添加后 ws 又推一次）
-//        val lastMsg = chat.msgs.lastOrNull()
-//        val isDuplicate = isMe && lastMsg?.text == contentObj.text && lastMsg?.from == User.Me
-//
-//        if (!isDuplicate) {
-//          chat.msgs.add(Msg(senderUser, contentObj.text, timeStr).apply { read = true })
-//        }
-//      }
-//    } catch (e: Exception) {
-//      android.util.Log.e("WeViewModel", "WebSocket handle error", e)
-//    }
-//  }
-  /**
-//   * 【修改】处理 WebSocket 消息
-//   * 收到消息后，保存到本地数据库
-//   */
-//  private fun handleWebSocketMessage(jsonStr: String) {
-//    try {
-//      val parser = Json { ignoreUnknownKeys = true }
-//      val wsMsg = parser.decodeFromString<WsMessage>(jsonStr)
-//
-//      val chat = chats.find { it.conversationId == wsMsg.conversationId }
-//
-//      // 如果当前内存里没有这个会话，刷新列表（刷新时会自动从DB加载，但我们需要先把这条消息存DB）
-//      // 所以无论 chat 是否为空，都应该先存库
-//
-//      if (wsMsg.msgType == 1) {
-//        val contentObj = parser.decodeFromString<WsContent>(wsMsg.content)
-//        val isMe = wsMsg.senderId.toString() == currentUserId
-//
-//        val date = Date(wsMsg.createdTime)
-//        val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
-//
-//        // 1. 【新增】保存到本地数据库
-//        // 只有当不是“自己发给自己的回执”时才存，或者根据 messageId 去重
-//        // 这里简单处理：都存（onConflict=Replace会根据ID覆盖，但我们这里MessageEntity主键是自增的）
-//        // 为了避免重复，可以在 MessageEntity 增加 messageId 字段作为唯一键，这里简化处理
-//        val entity = MessageEntity(
-//          conversationId = wsMsg.conversationId,
-//          senderId = wsMsg.senderId,
-//          content = contentObj.text,
-//          time = timeStr,
-//          timestamp = wsMsg.createdTime
-//        )
-//        // 启动协程写入数据库
-//        viewModelScope.launch {
-//          messageDao.insertMessage(entity)
-//        }
-//
-//        // 2. 更新 UI (如果当前正好在这个会话窗口)
-//        if (chat != null) {
-//          val lastMsg = chat.msgs.lastOrNull()
-//          // 简单防抖：如果是自己发的，且最后一条内容一样，就不重复加 UI 了
-//          val isDuplicate = isMe && lastMsg?.text == contentObj.text
-//
-//          if (!isDuplicate) {
-//            val senderUser = if (isMe) User.Me else {
-//              User(wsMsg.senderId.toString(), getNameForUser(wsMsg.senderId), getAvatarForUser(wsMsg.senderId))
-//            }
-//            chat.msgs.add(Msg(senderUser, contentObj.text, timeStr).apply { read = true })
-//          }
-//        } else {
-//          // 如果 chat 为空（新会话），刷新列表，列表刷新时会从 DB 读出刚才存进去的消息
-//          refreshConversationList()
-//        }
-//      }
-//    } catch (e: Exception) {
-//      android.util.Log.e("WeViewModel", "WebSocket handle error", e)
-//    }
-//  }
   // 【修改】WebSocket 接收：保存 messageId
   private fun handleWebSocketMessage(jsonStr: String) {
     try {
@@ -668,21 +354,3 @@ fun boom(chat: Chat, msg: String) {
   private fun getAvatarForUser(userId: Long) = when (userId) { 1001L -> R.drawable.avatar_zhangsan; 1002L -> R.drawable.avatar_lisi; else -> R.drawable.avatar_me }
   private fun getNameForUser(userId: Long) = when (userId) { 1001L -> "ZhangSan"; 1002L -> "LiSi"; else -> "User $userId" }
 }
-
-//  // 【新增】辅助方法：根据 ID 获取头像
-//  private fun getAvatarForUser(userId: Long): Int {
-//    return when (userId) {
-//      1001L -> R.drawable.avatar_zhangsan
-//      1002L -> R.drawable.avatar_lisi
-//      else -> R.drawable.avatar_me
-//    }
-//  }
-//
-//  // 【新增】辅助方法：根据 ID 获取名字
-//  private fun getNameForUser(userId: Long): String {
-//    return when (userId) {
-//      1001L -> "ZhangSan"
-//      1002L -> "LiSi"
-//      else -> "User $userId"
-//    }
-//  }

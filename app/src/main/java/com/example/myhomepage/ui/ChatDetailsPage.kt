@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -38,10 +39,8 @@ data class ChatDetails(val userId: String)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
-    // 1. 查找当前会话
     val chat = viewModel.chats.find { it.friend.id == userId }
 
-    // 如果找不到会话（可能是异常情况），简单显示提示
     if (chat == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("会话不存在或加载中...")
@@ -49,27 +48,33 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
         return
     }
 
-    // 2. 【关键修改】进入页面时，主动拉取历史消息
-    // 只有这样，离线期间产生的消息才能被拉取下来并显示
     LaunchedEffect(chat.conversationId) {
         chat.conversationId?.let { cid ->
             viewModel.syncChatHistory(cid)
         }
     }
 
-    // 3. 清除未读数
     LaunchedEffect(Unit) {
         chat.unreadCount = 0
     }
 
     var shakingTime by remember { mutableIntStateOf(0) }
-    // emoji
     var showEmojiSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true, // 跳过半展开状态，直接全屏/收起
+        skipPartiallyExpanded = true,
     )
     val coroutineScope = rememberCoroutineScope()
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
+    // 1. 【新增】列表状态，用于控制滚动
+    val listState = rememberLazyListState()
+
+    // 2. 【新增】当消息数量变化时（收到新消息/发消息），自动滚动到底部
+    LaunchedEffect(chat.msgs.size) {
+        if (chat.msgs.isNotEmpty()) {
+            listState.animateScrollToItem(chat.msgs.size - 1)
+        }
+    }
 
     Column(
         Modifier
@@ -77,13 +82,12 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        // 使用 displayName 显示群名或用户名
         WeTopBar(chat.displayName, onBack = { backDispatcher?.onBackPressed() })
 
         Box(
             Modifier
                 .background(WeComposeTheme.colors.chatPage)
-                .weight(1f)
+                .weight(1f) // 占据剩余空间，当底部被键盘顶起时，这里会自动缩小
         ) {
             val shakingOffset = remember { Animatable(0f) }
             LaunchedEffect(shakingTime) {
@@ -97,7 +101,8 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
             }
 
             LazyColumn(
-                Modifier
+                state = listState, // 绑定状态
+                modifier = Modifier
                     .fillMaxSize()
                     .offset(shakingOffset.value.dp, shakingOffset.value.dp)
             ) {
@@ -114,15 +119,11 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
         if (showEmojiSheet) {
             ModalBottomSheet(
                 onDismissRequest = {
-                    // 点击弹窗外区域关闭
                     coroutineScope.launch { sheetState.hide() }
                         .invokeOnCompletion { showEmojiSheet = false }
                 },
                 sheetState = sheetState,
-                // 自定义弹窗背景（贴近微信风格）
                 containerColor = Color(0xFFF5F5F5),
-
-                // 弹窗内容：Emoji网格
                 content = {
                     EmojiGridView(
                         emojiList = listOf("\uD83D\uDCA3", "\uD83D\uDC4C", "\uD83D\uDC4D", "\uD83D\uDC36"),
@@ -140,18 +141,66 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
 }
 
 @Composable
+fun ChatBottomBar(onBombClicked: (String) -> Unit, onOtherClicked: () -> Unit) {
+    var editingText by remember { mutableStateOf("") }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(WeComposeTheme.colors.bottomBar)
+            .padding(4.dp, 0.dp)
+            .navigationBarsPadding()
+            .imePadding() // 3. 【关键新增】增加 imePadding，让输入栏随键盘顶起，而不是整个页面顶起
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_voice),
+            contentDescription = null,
+            Modifier
+                .align(Alignment.CenterVertically)
+                .padding(4.dp)
+                .size(28.dp),
+            tint = WeComposeTheme.colors.icon
+        )
+        BasicTextField(
+            editingText, { editingText = it },
+            Modifier
+                .weight(1f)
+                .padding(4.dp, 8.dp)
+                .height(40.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(WeComposeTheme.colors.textFieldBackground)
+                .padding(start = 8.dp, top = 10.dp, end = 8.dp),
+            cursorBrush = SolidColor(WeComposeTheme.colors.textPrimary)
+        )
+        Text(
+            "发送",
+            Modifier
+                .clickable {
+                    if (editingText.isNotBlank()) {
+                        onBombClicked(editingText)
+                        editingText = ""
+                    }
+                }
+                .padding(4.dp)
+                .align(Alignment.CenterVertically),
+            fontSize = 20.sp,
+            color = WeComposeTheme.colors.textPrimary
+        )
+        Icon(
+            painterResource(R.drawable.ic_add),
+            contentDescription = null,
+            Modifier
+                .align(Alignment.CenterVertically)
+                .padding(4.dp)
+                .size(28.dp)
+                .clickable { onOtherClicked() },
+            tint = WeComposeTheme.colors.icon
+        )
+    }
+}
+
+@Composable
 fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
     val shakingAngleBubble = remember { Animatable(0f) }
-//  LaunchedEffect(key1 = shakingTime, block = {
-//    if (shakingTime != 0) {
-//      delay(shakingLevel.toLong() * 30)
-//      shakingAngleBubble.animateTo(
-//        0f,
-//        animationSpec = spring(0.4f, 500f),
-//        initialVelocity = 1200f / (1 + shakingLevel * 0.4f)
-//      )
-//    }
-//  })
     if (msg.from == User.Me) {
         Row(
             Modifier
@@ -248,65 +297,6 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
     }
 }
 
-@Composable
-fun ChatBottomBar(onBombClicked: (String) -> Unit, onOtherClicked: () -> Unit) {
-//  val messages = remember { mutableStateListOf<String>() }
-    var editingText by remember { mutableStateOf("") }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(WeComposeTheme.colors.bottomBar)
-            .padding(4.dp, 0.dp)
-            .navigationBarsPadding()
-    ) {
-        Icon(
-            painterResource(R.drawable.ic_voice),
-            contentDescription = null,
-            Modifier
-                .align(Alignment.CenterVertically)
-                .padding(4.dp)
-                .size(28.dp),
-            tint = WeComposeTheme.colors.icon
-        )
-        BasicTextField(
-            editingText, { editingText = it },
-            Modifier
-                .weight(1f)
-                .padding(4.dp, 8.dp)
-                .height(40.dp)
-                .clip(MaterialTheme.shapes.small)
-                .background(WeComposeTheme.colors.textFieldBackground)
-                .padding(start = 8.dp, top = 10.dp, end = 8.dp),
-            cursorBrush = SolidColor(WeComposeTheme.colors.textPrimary)
-        )
-        Text(
-            "发送",
-            Modifier
-                .clickable {
-                    if (editingText.isNotBlank()) {
-                        onBombClicked(editingText)
-                        editingText = ""
-                    }
-                }
-                .padding(4.dp)
-                .align(Alignment.CenterVertically),
-            fontSize = 20.sp,
-            color = WeComposeTheme.colors.textPrimary
-        )
-        Icon(
-            painterResource(R.drawable.ic_add),
-            contentDescription = null,
-            Modifier
-                .align(Alignment.CenterVertically)
-                .padding(4.dp)
-                .size(28.dp)
-                .clickable { onOtherClicked() },
-            tint = WeComposeTheme.colors.icon
-        )
-    }
-}
-
-//展示emoji的网格
 @Composable
 fun EmojiGridView(
     emojiList: List<String>,

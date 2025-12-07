@@ -1,20 +1,12 @@
 package com.example.myhomepage.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -25,13 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myhomepage.R
 import com.example.myhomepage.WeViewModel
-import com.example.myhomepage.data.User
-import com.example.myhomepage.database.UserEntity
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
@@ -55,8 +44,9 @@ fun MeListTopBar(viewModel: WeViewModel) {
         .weight(1f)
         .padding(start = 12.dp)
     ) {
+      // 动态显示用户名
       Text(
-          viewModel.currentUser?.let { user -> "用户名：${user.username}" } ?: "游客${viewModel.currentUser?.userId}",
+        viewModel.currentUser?.let { user -> "用户名：${user.username}" } ?: "游客${viewModel.currentUser?.userId}",
         Modifier.padding(top = 75.dp),
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
@@ -88,109 +78,40 @@ fun MeListTopBar(viewModel: WeViewModel) {
   }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun MeListTopBarPreview() {
-//  MeListTopBar()
-//}
-
+// MeListItem 和 LogoutItem 保持不变... (请保留原代码)
 @Composable
-fun MeListItem(
-  @DrawableRes icon: Int,
-  title: String,
-  modifier: Modifier = Modifier,
-  badge: @Composable (() -> Unit)? = null,
-  endBadge: @Composable (() -> Unit)? = null,
-) {
+fun MeListItem(@DrawableRes icon: Int, title: String, modifier: Modifier = Modifier, badge: @Composable (() -> Unit)? = null, endBadge: @Composable (() -> Unit)? = null) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Image(
-      painterResource(icon), "title", Modifier
-        .padding(12.dp, 8.dp, 8.dp, 8.dp)
-        .size(36.dp)
-        .padding(8.dp)
-    )
-    Text(
-      title,
-      fontSize = 17.sp,
-      color = WeComposeTheme.colors.textSecondary
-    )
+    Image(painterResource(icon), "title", Modifier.padding(12.dp, 8.dp, 8.dp, 8.dp).size(36.dp).padding(8.dp))
+    Text(title, fontSize = 17.sp, color = WeComposeTheme.colors.textSecondary)
     badge?.invoke()
     Spacer(Modifier.weight(1f))
     endBadge?.invoke()
-    Icon(
-      painterResource(R.drawable.ic_arrow_more), contentDescription = "更多",
-      Modifier
-        .padding(0.dp, 0.dp, 12.dp, 0.dp)
-        .size(16.dp),
-      tint = WeComposeTheme.colors.more
-    )
+    Icon(painterResource(R.drawable.ic_arrow_more), contentDescription = "更多", Modifier.padding(0.dp, 0.dp, 12.dp, 0.dp).size(16.dp), tint = WeComposeTheme.colors.more)
   }
 }
 
 @Composable
 fun LogoutItem(modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            painterResource(R.drawable.logout), "title", Modifier
-                .size(38.dp)
-                .padding(5.dp),
-            tint = WeComposeTheme.colors.redletter
-        )
-        Text(
-            "退出登录",
-            fontSize = 20.sp,
-            color = WeComposeTheme.colors.redletter
-        )
-    }
+  Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+    Icon(painterResource(R.drawable.logout), "title", Modifier.size(38.dp).padding(5.dp), tint = WeComposeTheme.colors.redletter)
+    Text("退出登录", fontSize = 20.sp, color = WeComposeTheme.colors.redletter)
+  }
 }
 
 @Composable
 fun MeList(viewModel: WeViewModel, myLogout : () -> Unit) {
-  Box(Modifier
-    .background(WeComposeTheme.colors.background)
-    .fillMaxSize()) {
-    Column(Modifier
-      .background(WeComposeTheme.colors.chatPage)
-      .fillMaxWidth()) {
+  Box(Modifier.background(WeComposeTheme.colors.background).fillMaxSize()) {
+    Column(Modifier.background(WeComposeTheme.colors.chatPage).fillMaxWidth()) {
       MeListTopBar(viewModel)
-      Spacer(
-        Modifier
-          .background(WeComposeTheme.colors.background)
-          .fillMaxWidth()
-          .height(8.dp)
-      )
+      Spacer(Modifier.background(WeComposeTheme.colors.background).fillMaxWidth().height(8.dp))
       MeListItem(R.drawable.ic_moments, "朋友圈")
-      HorizontalDivider(
-        Modifier.padding(start = 56.dp),
-        color = WeComposeTheme.colors.divider,
-        thickness = 0.8f.dp
-      )
+      HorizontalDivider(Modifier.padding(start = 56.dp), color = WeComposeTheme.colors.divider, thickness = 0.8f.dp)
       MeListItem(R.drawable.ic_stickers, "表情")
-      Spacer(
-        Modifier
-          .background(WeComposeTheme.colors.background)
-          .fillMaxWidth()
-          .height(8.dp)
-      )
+      Spacer(Modifier.background(WeComposeTheme.colors.background).fillMaxWidth().height(8.dp))
       MeListItem(R.drawable.ic_settings, "设置")
-      Spacer(
-        Modifier
-          .background(WeComposeTheme.colors.background)
-          .fillMaxWidth()
-          .height(300.dp)
-      )
+      Spacer(Modifier.background(WeComposeTheme.colors.background).fillMaxWidth().height(300.dp))
       LogoutItem(Modifier.clickable { myLogout() })
     }
   }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//fun MeListPreview() {
-//  WeComposeTheme {
-//    MeList(myLogout)
-//  }
-//}

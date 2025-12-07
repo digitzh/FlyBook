@@ -3,51 +3,41 @@ package com.example.myhomepage.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myhomepage.data.User
-import com.example.myhomepage.ui.theme.WeComposeTheme
+import androidx.compose.ui.window.Popup
 import com.example.myhomepage.R
-import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
+import com.example.myhomepage.todolist.data.toBacklog
+import com.example.myhomepage.todolist.presentation.TodoListViewModel
 import com.example.myhomepage.ui.theme.TodoType
-
+import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
 fun TodoListTopBar(){
@@ -58,77 +48,109 @@ fun TodoListTopBar(){
 fun TodoListItem(
     backlog: Backlog,
     modifier: Modifier = Modifier,
+    itemTodoClick: () -> Unit = {},
+    onLongPress: (IntOffset)->Unit = {}
 ) {
-    // 外层用Surface实现圆角+正方形：
-    // 1. aspectRatio(1f) → 宽高比1:1（正方形）
-    // 2. shape → 圆角形状
-    // 3. fillMaxWidth() → 填充列宽（网格中每列宽度一致，高度=宽度→正方形）
+    var rowGlobalPosition by remember { mutableStateOf(Offset.Zero) }
+    var rowSize by remember { mutableStateOf(IntOffset.Zero) }
+
+    val rowCenterOffset by remember(rowGlobalPosition, rowSize) {
+        mutableStateOf(
+            IntOffset(
+                x = rowGlobalPosition.x.toInt() + (rowSize.x / 2),
+                y = rowGlobalPosition.y.toInt() + (rowSize.y / 2)
+            )
+        )
+    }
     Surface(
         modifier = modifier
+            .onGloballyPositioned { layoutCoordinates ->
+                rowGlobalPosition = layoutCoordinates.positionInWindow()
+                rowSize = IntOffset(layoutCoordinates.size.width, layoutCoordinates.size.height)
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {itemTodoClick()},
+                    onLongPress = { offset ->
+                        onLongPress(rowCenterOffset)
+                    }
+                )
+            }
             .fillMaxWidth()
-            .aspectRatio(1f) // 关键：宽高比1:1，实现正方形
-            .padding(4.dp), // 可选：Item之间的间距
-        shape = RoundedCornerShape(12.dp), // 圆角大小（按需调整）
-        color = getTodoColorByType(backlog.type), // 可选：背景色
-        shadowElevation = 2.dp // 可选：阴影提升质感
+            .aspectRatio(1f)
+            .padding(4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = getTodoColorByType(backlog.type),
+        shadowElevation = 2.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically, // 垂直居中对齐
-            horizontalArrangement = Arrangement.SpaceBetween // 左右控件贴边，中间占满
-        ) {
-
-            // 内部用Column/Row+居中布局，适配正方形空间
-            Column(
-                modifier = Modifier
-                    .fillMaxSize() // 填充正方形空间
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally, // 水平居中
-                verticalArrangement = Arrangement.Center // 垂直居中
+        Box(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
-                Image(
-                    painterResource(
-                        when (backlog.type) {
-                            TodoType.FILE -> R.drawable.ic_contact_tag
-                            TodoType.CONF -> R.drawable.ic_contact_official
-                            TodoType.MSG -> backlog.avatar
-                            TodoType.OTHER -> R.drawable.ic_photos
-                        }
-                    ),
-                    "avatar",
-                    Modifier
-                        .padding(12.dp, 8.dp, 8.dp, 8.dp)
-                        .size(50.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                )
-                Text(
-                    backlog.title,
-                    fontSize = 20.sp,
-                    color = WeComposeTheme.colors.textPrimary,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1, // 最多两行
-                    overflow = TextOverflow.Ellipsis, // 溢出省略
-                    textAlign = TextAlign.Center // 文字居中
-                )
-
-                Spacer(modifier = Modifier.height(8.dp)) // 头像和文字间距
-
-                // 文字：居中显示，限制行数避免溢出
-                Text(
-                    backlog.time,
-                    fontSize = 16.sp,
-                    color = WeComposeTheme.colors.textPrimary,
-                    maxLines = 2, // 最多两行
-                    overflow = TextOverflow.Ellipsis, // 溢出省略
-                    textAlign = TextAlign.Center // 文字居中
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Image(
+                        painterResource(
+                            when (backlog.type) {
+                                TodoType.FILE -> R.drawable.ic_contact_tag
+                                TodoType.CONF -> R.drawable.ic_contact_official
+                                TodoType.MSG -> backlog.avatar
+                                TodoType.OTHER -> R.drawable.ic_photos
+                            }
+                        ),
+                        "avatar",
+                        Modifier
+                            .padding(12.dp, 8.dp, 8.dp, 8.dp)
+                            .size(50.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                    )
+                    Text(
+                        backlog.title,
+                        fontSize = 20.sp,
+                        color = WeComposeTheme.colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        backlog.time,
+                        fontSize = 16.sp,
+                        color = WeComposeTheme.colors.textPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            if (backlog.complete) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .size(24.dp)
+                        .background(Color(0xFF4CAF50), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✓",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
 }
-
 
 fun getTodoColorByType(type: TodoType): Color {
     return when (type) {
@@ -140,13 +162,27 @@ fun getTodoColorByType(type: TodoType): Color {
 }
 
 @Composable
-fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (Backlog) -> Unit, addTodo : () -> Unit ) {
-    val showChatsList = chats.mapNotNull{ it.toBacklog()}
-    val backlogList = initbacklogList + showChatsList
+fun TodoList(
+    chats: List<Chat>,
+    listViewModel: TodoListViewModel,
+    onTodoClick: (Backlog) -> Unit,
+    addTodo: () -> Unit
+) {
+    val uiState by listViewModel.uiState.collectAsState()
+
+    // 合并数据库任务和聊天未读
+    val todoBacklogs = uiState.todos.map { it.toBacklog() }
+    val showChatsList = chats.mapNotNull { it.toBacklog() }
+    val backlogList = todoBacklogs + showChatsList
+
+    var showMenu by remember { mutableStateOf(false) }
+    var menuOffset by remember { mutableStateOf(IntOffset.Zero) }
+    var longPressedTodoId by remember { mutableStateOf<Long?>(null) }
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { addTodo() }) {
-                Text("+",fontSize = 20.sp,) // 简单写个 "+"
+            FloatingActionButton(onClick = addTodo) {
+                Text("+", fontSize = 20.sp)
             }
         }
     ) { padding ->
@@ -154,56 +190,95 @@ fun TodoList(chats: List<Chat>, initbacklogList: List<Backlog>, onTodoClick : (B
             Modifier
                 .background(WeComposeTheme.colors.background)
                 .fillMaxSize()
+                .padding(padding)
         ) {
             TodoListTopBar()
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2), // 固定2列 → 一行两个待办项
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp), // 列之间的间距
-                verticalArrangement = Arrangement.spacedBy(8.dp),   // 行之间的间距
-                contentPadding = PaddingValues(4.dp) // 列表整体内边距
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(4.dp)
             ) {
-
                 itemsIndexed(backlogList) { index, backlog ->
-                    if (backlog.type != TodoType.MSG)
-                        TodoListItem(backlog, Modifier.clickable { onTodoClick(backlog) })
-                    else
-                        TodoListItem(backlog)
-
-                    if (index < backlogList.size - 1) {
-                        HorizontalDivider(
-                            Modifier.padding(start = 56.dp),
-                            color = WeComposeTheme.colors.divider,
-                            thickness = 0.8f.dp
+                    if (backlog.type != TodoType.MSG) {
+                        TodoListItem(
+                            backlog = backlog,
+                            modifier = Modifier,
+                            itemTodoClick = { onTodoClick(backlog) },
+                            onLongPress = { offset ->
+                                longPressedTodoId = backlog.id
+                                menuOffset = IntOffset(
+                                    x = offset.x.toInt() - 205,
+                                    y = offset.y.toInt() + 50
+                                )
+                                showMenu = true
+                            }
                         )
+                    } else {
+                        TodoListItem(backlog)
                     }
                 }
             }
         }
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun ContactListItemPreview() {
-    WeComposeTheme {
-        Box {
-            TodoListItem(
-                Backlog("wenjian1", "周报","完成周报","2025-12-03", TodoType.MSG ),
-            )
+    if (showMenu) {
+        Popup(
+            offset = menuOffset,
+            onDismissRequest = { showMenu = false }
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TodoCompleteButton(
+                    onClick = {
+                        longPressedTodoId?.let { id ->
+                            listViewModel.onToggleCompleted(id)
+                        }
+                        showMenu = false
+                    }
+                )
+                TodoDeleteButton(
+                    onClick = {
+                        longPressedTodoId?.let { id ->
+                            listViewModel.onDeleteTodo(id)
+                        }
+                        showMenu = false
+                    }
+                )
+            }
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun ContactListPreview() {
-//    val contacts = listOf<User>(
-//        User("zhangsan", "张三", R.drawable.avatar_zhangsan),
-//        User("lisi", "李四", R.drawable.avatar_lisi),
-//    )
-//    TodoList(contacts)
-//}
+@Composable
+fun TodoCompleteButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .background(color = Color(0xFF90EE90), shape = CircleShape)
+            .clickable { onClick() }
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "✓", color = Color.White, fontSize = 18.sp)
+    }
+}
 
+@Composable
+fun TodoDeleteButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .background(color = Color(0xFFF8B4B4), shape = CircleShape)
+            .clickable { onClick() }
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "✕", color = Color.White, fontSize = 18.sp)
+    }
+}

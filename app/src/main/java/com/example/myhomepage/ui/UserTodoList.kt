@@ -18,14 +18,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +32,7 @@ import com.example.myhomepage.R
 import com.example.myhomepage.data.Backlog
 import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
+import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.todolist.data.toBacklog
 import com.example.myhomepage.todolist.presentation.TodoListViewModel
 import com.example.myhomepage.ui.theme.TodoType
@@ -49,7 +48,8 @@ fun TodoListItem(
     backlog: Backlog,
     modifier: Modifier = Modifier,
     itemTodoClick: () -> Unit = {},
-    onLongPress: (IntOffset)->Unit = {}
+    onLongPress: (IntOffset)->Unit = {},
+    onShare: () -> Unit = {} // 【新增】分享回调
 ) {
     var rowGlobalPosition by remember { mutableStateOf(Offset.Zero) }
     var rowSize by remember { mutableStateOf(IntOffset.Zero) }
@@ -131,6 +131,8 @@ fun TodoListItem(
                     )
                 }
             }
+
+            // 完成状态图标
             if (backlog.complete) {
                 Box(
                     modifier = Modifier
@@ -146,6 +148,22 @@ fun TodoListItem(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+
+            // 【新增】分享按钮 (右上角)
+            if (backlog.type != TodoType.MSG) { // 消息类型的待办通常不分享
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(28.dp)
+                        .background(Color(0x20000000), CircleShape) // 半透明背景
+                        .clickable { onShare() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // 这里简单用文字代替图标，实际可用 R.drawable.ic_share
+                    Text("↗", color = WeComposeTheme.colors.textSecondary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
@@ -166,11 +184,11 @@ fun TodoList(
     chats: List<Chat>,
     listViewModel: TodoListViewModel,
     onTodoClick: (Backlog) -> Unit,
-    addTodo: () -> Unit
+    addTodo: () -> Unit,
+    onShareTodo: (TodoShareCard) -> Unit // 【新增】接收分享动作
 ) {
     val uiState by listViewModel.uiState.collectAsState()
 
-    // 合并数据库任务和聊天未读
     val todoBacklogs = uiState.todos.map { it.toBacklog() }
     val showChatsList = chats.mapNotNull { it.toBacklog() }
     val backlogList = todoBacklogs + showChatsList
@@ -215,6 +233,18 @@ fun TodoList(
                                     y = offset.y.toInt() + 50
                                 )
                                 showMenu = true
+                            },
+                            // 【新增】点击分享时的处理
+                            onShare = {
+                                val card = TodoShareCard(
+                                    todoId = backlog.id,
+                                    title = backlog.title,
+                                    description = backlog.text,
+                                    type = backlog.type,
+                                    deadline = backlog.time,
+                                    done = backlog.complete
+                                )
+                                onShareTodo(card)
                             }
                         )
                     } else {

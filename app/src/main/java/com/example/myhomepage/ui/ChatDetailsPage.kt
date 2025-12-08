@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -23,22 +24,30 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myhomepage.R
 import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Msg
 import com.example.myhomepage.data.User
+import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.ui.theme.WeComposeTheme
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class ChatDetails(val userId: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
+fun ChatDetailsPage(
+    viewModel: WeViewModel,
+    userId: String,
+    onTodoCardClick: (TodoShareCard) -> Unit // 【新增】卡片点击回调
+) {
     val chat = viewModel.chats.find { it.friend.id == userId }
 
     if (chat == null) {
@@ -66,10 +75,8 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
     val coroutineScope = rememberCoroutineScope()
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
-    // 1. 【新增】列表状态，用于控制滚动
     val listState = rememberLazyListState()
 
-    // 2. 【新增】当消息数量变化时（收到新消息/发消息），自动滚动到底部
     LaunchedEffect(chat.msgs.size) {
         if (chat.msgs.isNotEmpty()) {
             listState.animateScrollToItem(chat.msgs.size - 1)
@@ -87,7 +94,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
         Box(
             Modifier
                 .background(WeComposeTheme.colors.chatPage)
-                .weight(1f) // 占据剩余空间，当底部被键盘顶起时，这里会自动缩小
+                .weight(1f)
         ) {
             val shakingOffset = remember { Animatable(0f) }
             LaunchedEffect(shakingTime) {
@@ -101,7 +108,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
             }
 
             LazyColumn(
-                state = listState, // 绑定状态
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .offset(shakingOffset.value.dp, shakingOffset.value.dp)
@@ -109,7 +116,7 @@ fun ChatDetailsPage(viewModel: WeViewModel, userId: String) {
                 items(chat.msgs.size) { index ->
                     val msg = chat.msgs[index]
                     msg.apply { read = true }
-                    MessageItem(msg, shakingTime, chat.msgs.size - index - 1)
+                    MessageItem(msg, shakingTime, chat.msgs.size - index - 1, onTodoCardClick)
                 }
             }
         }
@@ -149,7 +156,7 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit, onOtherClicked: () -> Unit) {
             .background(WeComposeTheme.colors.bottomBar)
             .padding(4.dp, 0.dp)
             .navigationBarsPadding()
-            .imePadding() // 3. 【关键新增】增加 imePadding，让输入栏随键盘顶起，而不是整个页面顶起
+            .imePadding()
     ) {
         Icon(
             painterResource(R.drawable.ic_voice),
@@ -199,9 +206,11 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit, onOtherClicked: () -> Unit) {
 }
 
 @Composable
-fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
+fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int, onTodoCardClick: (TodoShareCard) -> Unit = {}) {
     val shakingAngleBubble = remember { Animatable(0f) }
-    if (msg.from == User.Me) {
+    val isMe = msg.from == User.Me
+
+    if (isMe) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -209,33 +218,37 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
             horizontalArrangement = Arrangement.End
         ) {
             val bubbleColor = WeComposeTheme.colors.bubbleMe
-            Text(
-                "${msg.text}",
-                Modifier
-                    .graphicsLayer(
-                        rotationZ = shakingAngleBubble.value,
-                        transformOrigin = TransformOrigin(1f, 0f)
-                    )
-                    .drawBehind {
-                        val bubble = Path().apply {
-                            val rect = RoundRect(
-                                10.dp.toPx(),
-                                0f,
-                                size.width - 10.dp.toPx(),
-                                size.height,
-                                4.dp.toPx(),
-                                4.dp.toPx()
-                            )
-                            addRoundRect(rect)
-                            moveTo(size.width - 10.dp.toPx(), 15.dp.toPx())
-                            lineTo(size.width - 5.dp.toPx(), 20.dp.toPx())
-                            lineTo(size.width - 10.dp.toPx(), 25.dp.toPx())
-                            close()
+
+            if (msg.type == 5) {
+                // 【新增】渲染卡片消息
+                TodoMessageCard(msg.text, bubbleColor, onTodoCardClick)
+            } else {
+                // 渲染文本消息 (保留原有气泡效果)
+                Text(
+                    "${msg.text}",
+                    Modifier
+                        .graphicsLayer(
+                            rotationZ = shakingAngleBubble.value,
+                            transformOrigin = TransformOrigin(1f, 0f)
+                        )
+                        .drawBehind {
+                            val bubble = Path().apply {
+                                val rect = RoundRect(
+                                    10.dp.toPx(), 0f, size.width - 10.dp.toPx(), size.height, 4.dp.toPx(), 4.dp.toPx()
+                                )
+                                addRoundRect(rect)
+                                moveTo(size.width - 10.dp.toPx(), 15.dp.toPx())
+                                lineTo(size.width - 5.dp.toPx(), 20.dp.toPx())
+                                lineTo(size.width - 10.dp.toPx(), 25.dp.toPx())
+                                close()
+                            }
+                            drawPath(bubble, bubbleColor)
                         }
-                        drawPath(bubble, bubbleColor)
-                    }
-                    .padding(20.dp, 10.dp),
-                color = WeComposeTheme.colors.textPrimaryMe)
+                        .padding(20.dp, 10.dp),
+                    color = WeComposeTheme.colors.textPrimaryMe
+                )
+            }
+
             Image(
                 painterResource(msg.from.avatar),
                 contentDescription = msg.from.name,
@@ -266,34 +279,83 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int) {
                     .clip(RoundedCornerShape(4.dp))
             )
             val bubbleColor = WeComposeTheme.colors.bubbleOthers
-            Text(
-                "${msg.text}",
-                Modifier
-                    .graphicsLayer(
-                        rotationZ = -shakingAngleBubble.value,
-                        transformOrigin = TransformOrigin(0f, 0f)
-                    )
-                    .drawBehind {
-                        val bubble = Path().apply {
-                            val rect = RoundRect(
-                                10.dp.toPx(),
-                                0f,
-                                size.width - 10.dp.toPx(),
-                                size.height,
-                                4.dp.toPx(),
-                                4.dp.toPx()
-                            )
-                            addRoundRect(rect)
-                            moveTo(10.dp.toPx(), 15.dp.toPx())
-                            lineTo(5.dp.toPx(), 20.dp.toPx())
-                            lineTo(10.dp.toPx(), 25.dp.toPx())
-                            close()
+
+            if (msg.type == 5) {
+                // 【新增】渲染卡片消息
+                TodoMessageCard(msg.text, bubbleColor, onTodoCardClick)
+            } else {
+                // 渲染文本消息
+                Text(
+                    "${msg.text}",
+                    Modifier
+                        .graphicsLayer(
+                            rotationZ = -shakingAngleBubble.value,
+                            transformOrigin = TransformOrigin(0f, 0f)
+                        )
+                        .drawBehind {
+                            val bubble = Path().apply {
+                                val rect = RoundRect(
+                                    10.dp.toPx(), 0f, size.width - 10.dp.toPx(), size.height, 4.dp.toPx(), 4.dp.toPx()
+                                )
+                                addRoundRect(rect)
+                                moveTo(10.dp.toPx(), 15.dp.toPx())
+                                lineTo(5.dp.toPx(), 20.dp.toPx())
+                                lineTo(10.dp.toPx(), 25.dp.toPx())
+                                close()
+                            }
+                            drawPath(bubble, bubbleColor)
                         }
-                        drawPath(bubble, bubbleColor)
-                    }
-                    .padding(20.dp, 10.dp),
-                color = WeComposeTheme.colors.textPrimary)
+                        .padding(20.dp, 10.dp),
+                    color = WeComposeTheme.colors.textPrimary
+                )
+            }
         }
+    }
+}
+
+// 【新增】待办卡片 UI 组件
+@Composable
+fun TodoMessageCard(jsonStr: String, bgColor: Color, onClick: (TodoShareCard) -> Unit) {
+    // 尝试解析 JSON
+    val card = remember(jsonStr) { // 使用 remember 避免重组时重复解析
+        try {
+            // 第一次尝试：直接解析
+            Json { ignoreUnknownKeys = true }.decodeFromString<TodoShareCard>(jsonStr)
+        } catch (e1: Exception) {
+            try {
+                // 第二次尝试：如果是被转义的字符串 (e.g. "{\"id\":1}"), 先解成 String 再解对象
+                val unescaped = Json.decodeFromString<String>(jsonStr)
+                Json { ignoreUnknownKeys = true }.decodeFromString<TodoShareCard>(unescaped)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
+    if (card != null) {
+        // ... 渲染逻辑保持不变 ...
+        Column(
+            Modifier
+                .width(220.dp)
+                .background(bgColor, RoundedCornerShape(8.dp))
+                .clickable { onClick(card) }
+                .padding(12.dp)
+        ) {
+            Text(card.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = WeComposeTheme.colors.textPrimary)
+            Spacer(Modifier.height(4.dp))
+            Text(card.description, maxLines = 2, fontSize = 12.sp, overflow = TextOverflow.Ellipsis, color = WeComposeTheme.colors.textSecondary)
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(8.dp).clip(CircleShape).background(if(card.done) Color.Green else Color.Red)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(if(card.done) "已完成" else "进行中", fontSize = 10.sp, color = WeComposeTheme.colors.textSecondary)
+            }
+        }
+    } else {
+        // 调试用：显示原始字符串，方便看哪里不对
+        Text("[解析错误] $jsonStr", Modifier.background(bgColor).padding(8.dp), color = Color.Red, fontSize = 10.sp)
     }
 }
 
@@ -304,18 +366,16 @@ fun EmojiGridView(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        // 网格展示Emoji（4列布局，贴近微信）
         LazyVerticalGrid(
-            columns = GridCells.Fixed(4), // 4列
+            columns = GridCells.Fixed(4),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(emojiList) { emoji ->
-                // Emoji项：可点击，放大显示
                 Text(
                     text = emoji,
-                    fontSize = 32.sp, // Emoji大小
+                    fontSize = 32.sp,
                     modifier = Modifier
                         .clickable { onEmojiClick(emoji) }
                         .padding(8.dp)

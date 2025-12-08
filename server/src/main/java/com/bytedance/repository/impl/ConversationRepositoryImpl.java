@@ -54,5 +54,14 @@ public class ConversationRepositoryImpl implements IConversationRepository {
     public void update(Conversation conversation) {
         conversationMapper.updateById(conversation);
     }
+
+    @Override
+    public List<Conversation> findByNameAndType(String name, Integer type) {
+        return conversationMapper.selectList(
+                new LambdaQueryWrapper<Conversation>()
+                        .eq(Conversation::getName, name)
+                        .eq(Conversation::getType, type)
+        );
+    }
 }
 

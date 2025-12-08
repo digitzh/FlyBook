@@ -33,5 +33,13 @@ public interface IConversationRepository {
      * 更新会话
      */
     void update(Conversation conversation);
+
+    /**
+     * 根据群名和类型查询群聊列表
+     * @param name 群名
+     * @param type 类型（2=群聊）
+     * @return 符合条件的群聊列表
+     */
+    List<Conversation> findByNameAndType(String name, Integer type);
 }
 

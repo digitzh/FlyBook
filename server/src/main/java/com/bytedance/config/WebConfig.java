@@ -34,7 +34,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**") // 拦截所有 api 接口
                 .excludePathPatterns(
                         "/api/users/login",    // 放行登录
-                        "/api/users/register"  // 放行注册
+                        "/api/users/register", // 放行注册
+                        "/api/users/list"      // 放行获取用户列表（客户端需要同步用户数据）
                 );
     }
 }

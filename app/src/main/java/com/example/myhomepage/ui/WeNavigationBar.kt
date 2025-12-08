@@ -31,7 +31,7 @@ fun WeNavigationBar(selected: Int, onSelected: (Int) -> Unit){
         TabItem(if (selected == 0) R.drawable.ic_chat_filled else R.drawable.ic_chat_outlined, "聊天",
             if (selected == 0) WeComposeTheme.colors.iconCurrent else WeComposeTheme.colors.icon,
             Modifier.weight(1f).clickable { onSelected(0) })
-        TabItem(if (selected == 1) R.drawable.ic_discovery_filled else R.drawable.ic_discovery_outlined, "代办事项",
+        TabItem(if (selected == 1) R.drawable.ic_discovery_filled else R.drawable.ic_discovery_outlined, "待办事项",
             if (selected == 1) WeComposeTheme.colors.iconCurrent else WeComposeTheme.colors.icon,
             Modifier.weight(1f).clickable { onSelected(1) })
         TabItem(if (selected == 2) R.drawable.ic_me_filled else R.drawable.ic_me_outlined, "我",

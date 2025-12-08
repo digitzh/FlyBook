@@ -56,10 +56,42 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
+  /**
+   * 同步用户数据从服务端到本地数据库
+   */
+  suspend fun syncUsersFromServer() {
+    try {
+      val userList = apiService.getUserList()
+      if (userList.isNotEmpty()) {
+        val userEntities = userList.map { userVO ->
+          UserEntity(
+            userId = userVO.userId,
+            username = userVO.username,
+            avatarUrl = userVO.avatarUrl,
+            password = null, // 不保存密码
+            createdTime = System.currentTimeMillis()
+          )
+        }
+        userDao.insertUsers(userEntities)
+        android.util.Log.d("WeViewModel", "同步了 ${userEntities.size} 个用户到本地数据库")
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("WeViewModel", "同步用户数据失败", e)
+    }
+  }
+
   suspend fun setCurrentUserIdAndLoadUser(userId: String) {
     currentUserId = userId
     val userIdLong = userId.toLongOrNull()
-    if (userIdLong != null) currentUser = userDao.getUserById(userIdLong)
+    if (userIdLong != null) {
+      // 先从本地数据库查询
+      currentUser = userDao.getUserById(userIdLong)
+      // 如果本地数据库没有，尝试从服务端同步后再查询
+      if (currentUser == null) {
+        syncUsersFromServer()
+        currentUser = userDao.getUserById(userIdLong)
+      }
+    }
   }
 
   var chats by mutableStateOf(listOf<Chat>())

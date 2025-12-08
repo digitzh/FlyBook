@@ -148,6 +148,8 @@ class MainActivity : ComponentActivity() {
                     composable<Login> {
                         LoginPage { userId ->
                             lifecycleScope.launch {
+                                // 先同步用户数据，再设置当前用户
+                                viewModel.syncUsersFromServer()
                                 viewModel.setCurrentUserIdAndLoadUser(userId)
                                 WebSocketManager.getInstance().connect(userId)
                                 navController.navigate(Home)

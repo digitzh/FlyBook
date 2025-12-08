@@ -46,14 +46,14 @@ fun MeListTopBar(viewModel: WeViewModel) {
     ) {
       // 动态显示用户名
       Text(
-        viewModel.currentUser?.let { user -> "用户名：${user.username}" } ?: "游客${viewModel.currentUser?.userId}",
+        viewModel.currentUser?.let { user -> "${user.username}" } ?: "${viewModel.currentUserId ?: ""}",
         Modifier.padding(top = 75.dp),
         fontSize = 22.sp,
         fontWeight = FontWeight.Bold,
         color = WeComposeTheme.colors.textPrimaryMe
       )
       Text(
-        "ID：${viewModel.currentUser?.userId}",
+        "ID：${viewModel.currentUser?.userId ?: viewModel.currentUserId ?: "未登录"}",
         Modifier.padding(top = 21.dp),
         fontSize = 14.sp,
         color = WeComposeTheme.colors.textPrimaryMe

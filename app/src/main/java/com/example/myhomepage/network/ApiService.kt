@@ -12,13 +12,26 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 @Serializable
-data class CreateConversationRequest(val type: Int, val name: String)
-@Serializable
-data class CreateConversationResponse(val code: Int, val msg: String, val data: Long?)
-@Serializable
-data class AddMembersRequest(val conversationId: Long, val targetUserIds: List<Long>)
+data class CreateConversationRequest(
+    val type: Int,
+    val name: String
+)
 
-// 【修改】给 ApiResponse 增加默认值，防止 MissingFieldException
+// 【修改】添加默认值，防止解析崩溃
+@Serializable
+data class CreateConversationResponse(
+    val code: Int = -1,
+    val msg: String = "",
+    val data: Long? = null
+)
+
+@Serializable
+data class AddMembersRequest(
+    val conversationId: Long,
+    val targetUserIds: List<Long>
+)
+
+// 【修改】添加默认值，并使用 JsonElement? 泛型占位
 @Serializable
 data class ApiResponse<T>(
     val code: Int = -1,
@@ -28,27 +41,54 @@ data class ApiResponse<T>(
 
 @Serializable
 data class ConversationVO(
-    val conversationId: Long, val type: Int, val name: String? = null, val avatarUrl: String? = null,
-    val lastMsgContent: String? = null, val lastMsgTime: String? = null, val unreadCount: Int = 0
+    val conversationId: Long,
+    val type: Int,
+    val name: String? = null,
+    val avatarUrl: String? = null,
+    val lastMsgContent: String? = null,
+    val lastMsgTime: String? = null,
+    val unreadCount: Int = 0
 )
+
 @Serializable
-data class SendMessageRequest(val conversationId: Long, val text: String)
+data class SendMessageRequest(
+    val conversationId: Long,
+    val text: String,
+    val msgType: Int = 1 // 【新增】发送时携带消息类型
+)
+
 @Serializable
 data class SendMessageData(
-    val messageId: Long, val conversationId: Long, val senderId: Long, val seq: Long,
-    val msgType: Int, val content: String, val createdTime: String
+    val messageId: Long,
+    val conversationId: Long,
+    val senderId: Long,
+    val seq: Long,
+    val msgType: Int,
+    val content: String,
+    val createdTime: String
 )
+
+// 【修改】添加 msgType (默认1)
 @Serializable
 data class MessageVO(
-    val messageId: Long, val conversationId: Long, val senderId: Long, val content: String, val createdTime: String, val seq: Long
+    val messageId: Long,
+    val conversationId: Long,
+    val senderId: Long,
+    val content: String,
+    val createdTime: String,
+    val seq: Long,
+    val msgType: Int = 1
 )
-@Serializable
-data class UserVO(val userId: Long, val username: String, val avatarUrl: String? = null)
 
+@Serializable
+data class UserVO(
+    val userId: Long,
+    val username: String,
+    val avatarUrl: String? = null
+)
 
 class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
     private val client = OkHttpClient()
-    // 配置 JSON 解析器，允许忽略未知键，宽容模式
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -64,9 +104,20 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
             val responseBody = response.body?.string() ?: return@withContext null
             if (response.isSuccessful) {
                 val apiResponse = json.decodeFromString<CreateConversationResponse>(responseBody)
-                if (apiResponse.code == 0) apiResponse.data else null
-            } else null
-        } catch (e: Exception) { null }
+                if (apiResponse.code == 0) {
+                    apiResponse.data
+                } else {
+                    android.util.Log.e("ApiService", "Create conversation failed: ${apiResponse.msg}")
+                    null
+                }
+            } else {
+                android.util.Log.e("ApiService", "HTTP error: ${response.code}")
+                null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ApiService", "Create conversation error", e)
+            null
+        }
     }
 
     suspend fun addMembersToConversation(userId: String, conversationId: Long, targetUserIds: List<Long>): Boolean = withContext(Dispatchers.IO) {
@@ -77,8 +128,7 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
             val responseBody = response.body?.string() ?: return@withContext false
 
             if (response.isSuccessful) {
-                // 【关键修改】将 <Any?> 改为 <JsonElement?>
-                // JsonElement 是 kotlinx.serialization 内置支持的通用类型
+                // 【修改】使用 JsonElement? 避免 Any? 序列化错误
                 val apiResponse = json.decodeFromString<ApiResponse<JsonElement?>>(responseBody)
                 apiResponse.code == 0
             } else {
@@ -103,9 +153,10 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
         } catch (e: Exception) { emptyList() }
     }
 
-    suspend fun sendMessage(userId: String, conversationId: Long, text: String): SendMessageData? = withContext(Dispatchers.IO) {
+    suspend fun sendMessage(userId: String, conversationId: Long, text: String, msgType: Int = 1): SendMessageData? = withContext(Dispatchers.IO) {
         try {
-            val requestBody = json.encodeToString(SendMessageRequest(conversationId, text)).toRequestBody(jsonMediaType)
+            // 【修改】传入 msgType
+            val requestBody = json.encodeToString(SendMessageRequest(conversationId, text, msgType)).toRequestBody(jsonMediaType)
             val request = Request.Builder().url("$baseUrl/api/messages/send").post(requestBody).addHeader("X-User-Id", userId).build()
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string() ?: return@withContext null

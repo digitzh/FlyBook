@@ -15,29 +15,28 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.myhomepage.network.WebSocketManager
+import com.example.myhomepage.share.ShareTodoToChat
+import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.todolist.TodoAppContainer
 import com.example.myhomepage.todolist.presentation.TodoDetailViewModel
 import com.example.myhomepage.todolist.presentation.TodoListViewModel
-import com.example.myhomepage.ui.AddTodoPage
-import com.example.myhomepage.ui.ChatDetails
-import com.example.myhomepage.ui.ChatDetailsPage
-import com.example.myhomepage.ui.Home
-import com.example.myhomepage.ui.HomePage
-import com.example.myhomepage.ui.Login
-import com.example.myhomepage.ui.LoginPage
-import com.example.myhomepage.ui.TodoDetails
-import com.example.myhomepage.ui.TodoDetailsPage
-import com.example.myhomepage.ui.TodoEdit
+import com.example.myhomepage.ui.*
 import com.example.myhomepage.ui.theme.WeComposeTheme
-import com.example.myhomepage.ui.todoAdd
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.net.URLDecoder
+import java.net.URLEncoder
+
+// 新增路由定义
+@Serializable data class SelectConversation(val cardJson: String)
+@Serializable data class SharedTodoDetails(val cardJson: String)
 
 class MainActivity : ComponentActivity() {
 
-    // 您的 IM ViewModel
     val viewModel: WeViewModel by viewModels()
 
-    // 远端的 Todo 依赖容器和 ViewModels
     private val todoAppContainer: TodoAppContainer by lazy {
         TodoAppContainer(applicationContext)
     }
@@ -62,28 +61,66 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeComposeTheme(viewModel.theme) {
                 val navController = rememberNavController()
+
+                // 【实现分享接口】
+                val shareTodoToChat = object : ShareTodoToChat {
+                    override fun share(card: TodoShareCard) {
+                        val json = Json.encodeToString(card)
+                        val encoded = URLEncoder.encode(json, "UTF-8")
+                        navController.navigate(SelectConversation(encoded))
+                    }
+                }
+
                 NavHost(navController, Login) {
                     composable<Home> {
                         LaunchedEffect(Unit) {
                             viewModel.refreshConversationList()
                         }
-                        // 合并：同时传入 viewModel (IM) 和 todolistViewModel (Todo)
                         HomePage(
                             viewModel,
                             todolistViewModel,
                             { navController.navigate(ChatDetails(it.friend.id)) },
                             { navController.navigate(TodoDetails(it.id)) },
                             { navController.navigate(Login) },
-                            { navController.navigate(todoAdd) }
+                            { navController.navigate(todoAdd) },
+                            // 传递分享逻辑
+                            onShareTodo = { card -> shareTodoToChat.share(card) }
                         )
                     }
                     composable<ChatDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                     ) {
-                        ChatDetailsPage(viewModel, it.toRoute<ChatDetails>().userId)
+                        ChatDetailsPage(
+                            viewModel,
+                            it.toRoute<ChatDetails>().userId,
+                            // 点击卡片进入详情页
+                            onTodoCardClick = { card ->
+                                val json = Json.encodeToString(card)
+                                val encoded = URLEncoder.encode(json, "UTF-8")
+                                navController.navigate(SharedTodoDetails(encoded))
+                            }
+                        )
                     }
-                    // 使用远端的 Todo 详情页逻辑
+
+                    // 【新增】选择会话页面
+                    composable<SelectConversation> { entry ->
+                        val json = URLDecoder.decode(entry.toRoute<SelectConversation>().cardJson, "UTF-8")
+                        val card = Json.decodeFromString<TodoShareCard>(json)
+                        SelectConversationPage(
+                            viewModel, card,
+                            onBack = { navController.popBackStack() },
+                            onSent = { navController.popBackStack() } // 发送成功后返回
+                        )
+                    }
+
+                    // 【新增】只读详情页面
+                    composable<SharedTodoDetails> { entry ->
+                        val json = URLDecoder.decode(entry.toRoute<SharedTodoDetails>().cardJson, "UTF-8")
+                        val card = Json.decodeFromString<TodoShareCard>(json)
+                        SharedTodoDetailsPage(card, onBack = { navController.popBackStack() })
+                    }
+
                     composable<TodoDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
@@ -95,7 +132,6 @@ class MainActivity : ComponentActivity() {
                             onEditClick = { navController.navigate(TodoEdit(it.toRoute<TodoDetails>().todoId)) }
                         )
                     }
-                    // 使用远端的 AddTodo 逻辑
                     composable<todoAdd> {
                         AddTodoPage(addViewModel, false, null, onBack = { navController.popBackStack() }) {}
                     }
@@ -111,7 +147,6 @@ class MainActivity : ComponentActivity() {
                     }
                     composable<Login> {
                         LoginPage { userId ->
-                            // 保留您的登录逻辑 (WebSocket 连接)
                             lifecycleScope.launch {
                                 viewModel.setCurrentUserIdAndLoadUser(userId)
                                 WebSocketManager.getInstance().connect(userId)

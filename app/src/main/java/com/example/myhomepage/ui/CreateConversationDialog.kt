@@ -51,29 +51,16 @@ fun CreateConversationDialog(
         }
     }
 
-    // 【修改】自动命名逻辑
+    // 自动命名逻辑：拼接所有选中成员的名字
     LaunchedEffect(selectedUserIds) {
         if (!isNameModified) {
-            // 1. 找出所有被选中的用户对象
-            val selectedUsers = users.filter { selectedUserIds.contains(it.userId) }
+            // 找到所有选中的用户（按列表顺序）
+            val selectedNames = sortedUsers
+                .filter { selectedUserIds.contains(it.userId) }
+                .map { it.username }
 
-            // 2. 计算人数（排除自己）
-            val otherUsers = selectedUsers.filter { it.userId != currentUserId }
-
-            if (otherUsers.size == 1) {
-                // 情况A：双人聊天 (P2P) -> 默认名为对方名字
-                // 注意：对于P2P，服务端通常会忽略这个name，而是动态显示对方名字
-                conversationName = otherUsers.first().username
-            } else if (selectedUsers.isNotEmpty()) {
-                // 情况B：多人聊天 (Group) -> 包含【自己】的所有人名拼接
-                // 【修改】这里不再排除 currentUserId，而是使用 selectedUsers 全部
-                // 为了让名字好看点，可以把“自己”放在第一个或者最后一个，或者按原列表顺序
-                // 这里按 sortedUsers 的顺序来拼，体验更好
-                val sortedSelectedNames = sortedUsers
-                    .filter { selectedUserIds.contains(it.userId) }
-                    .map { it.username }
-
-                conversationName = sortedSelectedNames.joinToString("、")
+            if (selectedNames.isNotEmpty()) {
+                conversationName = selectedNames.joinToString("、")
             } else {
                 conversationName = ""
             }
@@ -100,6 +87,7 @@ fun CreateConversationDialog(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 会话名称输入框
             OutlinedTextField(
                 value = conversationName,
                 onValueChange = {
@@ -175,34 +163,13 @@ fun CreateConversationDialog(
 
                 Button(
                     onClick = {
-                        // 强制使用群聊模式 (Type=2) 以兼容服务端限制
+                        // 【修改】强制使用 Type=2 (群聊)
                         val type = 2
-
-                        // 【关键】对于双人聊天，如果不希望写死群名导致“双方都看对方叫李四”，
-                        // 可以在这里做个判断：如果是双人且没改过名，传空字符串？
-                        // 但由于我们暂时强制 Type=2，服务端会把它当群聊处理，所以名字必须固定。
-                        // 如果您希望完美的 P2P 体验（双方看对方名字），服务端必须支持 Type=1。
-                        // 在当前 Type=2 的限制下，这是最优解：群名就是“张三、李四”。
-
-                        // 修正逻辑：如果只有两个人，也用“张三、李四”这种组合名，
-                        // 这样张三看到群名叫“张三、李四”，李四看到也叫“张三、李四”，这是群聊的正常表现。
-                        // 之前的问题是只用了“李四”做群名。
-
-                        // 重新生成一次名字以确保逻辑一致 (如果用户没改)
-                        val finalName = if (!isNameModified) {
-                            val sortedSelectedNames = sortedUsers
-                                .filter { selectedUserIds.contains(it.userId) }
-                                .map { it.username }
-                            sortedSelectedNames.joinToString("、")
-                        } else {
-                            conversationName
-                        }
-
-                        onCreateConversation(finalName, selectedUserIds.toList(), type)
+                        onCreateConversation(conversationName, selectedUserIds.toList(), type)
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = selectedUserIds.isNotEmpty(), // 只要有人就能建（自己也算人）
+                    enabled = conversationName.isNotBlank() && selectedUserIds.isNotEmpty(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WeComposeTheme.colors.meList
                     ),

@@ -15,4 +15,13 @@ public interface IConversationService extends IService<Conversation> {
 
     //添加会话成员
     void addMembers(Long conversationId, List<Long> targetUserIds, Long inviterId);
+
+    /**
+     * 查找是否存在相同群名和成员的群聊
+     * @param name 群名
+     * @param type 类型（2=群聊）
+     * @param memberIds 成员ID列表（包括创建者）
+     * @return 如果存在相同的群聊，返回其ID；否则返回null
+     */
+    Long findExistingConversation(String name, Integer type, List<Long> memberIds);
 }

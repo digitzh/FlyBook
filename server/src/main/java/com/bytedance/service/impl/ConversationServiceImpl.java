@@ -2,7 +2,10 @@ package com.bytedance.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytedance.entity.Conversation;
+import com.bytedance.entity.ConversationMember;
 import com.bytedance.mapper.ConversationMapper;
+import com.bytedance.repository.IConversationMemberRepository;
+import com.bytedance.repository.IConversationRepository;
 import com.bytedance.service.IConversationService;
 import com.bytedance.usecase.conversation.AddMembersUseCase;
 import com.bytedance.usecase.conversation.CreateConversationUseCase;
@@ -11,7 +14,10 @@ import com.bytedance.vo.ConversationVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 会话服务实现
@@ -23,14 +29,20 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     private final CreateConversationUseCase createConversationUseCase;
     private final GetConversationListUseCase getConversationListUseCase;
     private final AddMembersUseCase addMembersUseCase;
+    private final IConversationRepository conversationRepository;
+    private final IConversationMemberRepository conversationMemberRepository;
 
     @Autowired
     public ConversationServiceImpl(CreateConversationUseCase createConversationUseCase,
                                   GetConversationListUseCase getConversationListUseCase,
-                                  AddMembersUseCase addMembersUseCase) {
+                                  AddMembersUseCase addMembersUseCase,
+                                  IConversationRepository conversationRepository,
+                                  IConversationMemberRepository conversationMemberRepository) {
         this.createConversationUseCase = createConversationUseCase;
         this.getConversationListUseCase = getConversationListUseCase;
         this.addMembersUseCase = addMembersUseCase;
+        this.conversationRepository = conversationRepository;
+        this.conversationMemberRepository = conversationMemberRepository;
     }
 
     @Override
@@ -46,5 +58,41 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Override
     public void addMembers(Long conversationId, List<Long> targetUserIds, Long inviterId) {
         addMembersUseCase.execute(conversationId, targetUserIds, inviterId);
+    }
+
+    @Override
+    public Long findExistingConversation(String name, Integer type, List<Long> memberIds) {
+        // 如果群名为空或成员列表为空，不进行查找
+        if (name == null || name.trim().isEmpty() || memberIds == null || memberIds.isEmpty()) {
+            return null;
+        }
+
+        // 1. 根据群名和类型查询所有群聊
+        List<Conversation> conversations = conversationRepository.findByNameAndType(name, type);
+        if (conversations.isEmpty()) {
+            return null;
+        }
+
+        // 2. 将目标成员列表转换为 Set（去重并便于比较）
+        Set<Long> targetMemberSet = new HashSet<>(memberIds);
+
+        // 3. 遍历每个群聊，检查成员列表是否完全一致
+        for (Conversation conversation : conversations) {
+            List<ConversationMember> members = conversationMemberRepository
+                    .findByConversationId(conversation.getConversationId());
+            
+            // 提取成员ID集合
+            Set<Long> existingMemberSet = members.stream()
+                    .map(ConversationMember::getUserId)
+                    .collect(Collectors.toSet());
+
+            // 比较两个集合是否完全一致（大小相同且包含所有元素）
+            if (targetMemberSet.size() == existingMemberSet.size() 
+                    && targetMemberSet.containsAll(existingMemberSet)) {
+                return conversation.getConversationId();
+            }
+        }
+
+        return null;
     }
 }

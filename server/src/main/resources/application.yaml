@@ -7,7 +7,13 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/flybook?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 020916
+    password: Chubao88!
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:  # 如果有密码填这里
+    database: 0
+    timeout: 3000ms
 jackson:
   default-property-inclusion: non_null
 
@@ -29,7 +35,7 @@ jwt:
 
 # 认证配置
 auth:
-  enabled: false  # 是否启用登录系统，设置为 false 时关闭登录验证，请求中附带 userId 即可
+  enabled: true  # 是否启用登录系统，设置为 false 时关闭登录验证，请求中附带 userId 即可
 
 # 本地存储配置
 storage:

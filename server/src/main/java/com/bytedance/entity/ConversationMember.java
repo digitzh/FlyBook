@@ -35,6 +35,9 @@ public class ConversationMember {
     private Integer isMuted;
     private Integer isPinned;
 
+    private Boolean isTop;
+
+
     private LocalDateTime joinedTime;
 }
 

@@ -10,6 +10,7 @@ import com.bytedance.vo.ConversationVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,7 @@ public class GetConversationListUseCase {
                     .lastMsgContent(conv.getLastMsgContent())
                     .lastMsgTime(conv.getLastMsgTime())
                     .unreadCount(myMember.getUnreadCount())
+                    .isTop(myMember.getIsTop() != null && myMember.getIsTop()) // 【新增】设置VO状态
                     .build();
 
             voList.add(vo);
@@ -106,9 +108,20 @@ public class GetConversationListUseCase {
 
         // 5. 排序
         voList.sort((a, b) -> {
-            if (b.getLastMsgTime() == null) return -1;
-            if (a.getLastMsgTime() == null) return 1;
-            return b.getLastMsgTime().compareTo(a.getLastMsgTime());
+            boolean topA = Boolean.TRUE.equals(a.getIsTop());
+            boolean topB = Boolean.TRUE.equals(b.getIsTop());
+
+            // 1. 先比较置顶状态
+            if (topA && !topB) return -1; // A置顶，B不置顶 -> A在前
+            if (!topA && topB) return 1;  // B置顶，A不置顶 -> B在前
+
+            // 2. 都在同一层级（都置顶 或 都不置顶），再比较时间
+            LocalDateTime timeA = a.getLastMsgTime();
+            LocalDateTime timeB = b.getLastMsgTime();
+
+            if (timeB == null) return -1;
+            if (timeA == null) return 1;
+            return timeB.compareTo(timeA); // 时间倒序
         });
 
         return voList;

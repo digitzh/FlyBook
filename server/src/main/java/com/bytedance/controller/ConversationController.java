@@ -3,6 +3,7 @@ package com.bytedance.controller;
 import cn.hutool.log.Log;
 import com.bytedance.dto.AddMemberRequest;
 import com.bytedance.dto.ConversationDTO;
+import com.bytedance.dto.TopRequest;
 import com.bytedance.utils.UserContext;
 import com.bytedance.vo.ConversationVO;
 import com.bytedance.common.Result;
@@ -129,6 +130,13 @@ public class ConversationController {
             throw new RuntimeException("无法获取用户ID，请提供 userId");
         }
         return userId;
+    }
+
+    @PostMapping("/top")
+    public Result<String> setTop(@RequestBody TopRequest request) {
+        Long userId = UserContext.getUserId(); // 获取当前登录用户ID
+        conversationService.setConversationTop(request.getConversationId(), userId, request.getIsTop());
+        return Result.success("操作成功");
     }
 }
 

@@ -37,4 +37,6 @@ public interface IConversationService extends IService<Conversation> {
      * @param userId 用户ID
      */
     void clearAllUnreadCount(Long userId);
+
+    void setConversationTop(Long conversationId, Long userId, boolean isTop);
 }

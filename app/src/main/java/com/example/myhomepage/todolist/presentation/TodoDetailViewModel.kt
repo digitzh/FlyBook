@@ -2,6 +2,8 @@ package com.example.myhomepage.todolist.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myhomepage.share.TodoShareCard
+import com.example.myhomepage.todolist.data.toTodoTask
 import com.example.myhomepage.todolist.domain.TodoTask
 import com.example.myhomepage.todolist.domain.usecase.ObserveTodoDetailUseCase
 import com.example.myhomepage.todolist.domain.usecase.SaveTodoUseCase
@@ -21,7 +23,8 @@ import com.example.myhomepage.ui.theme.TodoType
  */
 class TodoDetailViewModel(
     private val observeTodoDetailUseCase: ObserveTodoDetailUseCase,
-    private val saveTodoUseCase: SaveTodoUseCase
+    private val saveTodoUseCase: SaveTodoUseCase,
+    private val saveSharedTodoUseCase: SaveTodoUseCase
 ) : ViewModel() {
 
     data class UiState(
@@ -100,9 +103,9 @@ class TodoDetailViewModel(
         _uiState.update { it.copy(deadline = newDeadline) }
     }
 
-    fun onCompletedChange(completed: Boolean) {
-        _uiState.update { it.copy(isCompleted = completed) }
-    }
+//    fun onCompletedChange(completed: Boolean) {
+//        _uiState.update { it.copy(isCompleted = completed) }
+//    }
 
     fun onErrorShown() {
         _uiState.update { it.copy(errorMessage = null) }
@@ -117,11 +120,6 @@ class TodoDetailViewModel(
      */
     fun onSaveClicked() {
         val current = _uiState.value
-
-//        if (current.title.isBlank()) {
-//            _uiState.update { it.copy(errorMessage = "标题不能为空") }
-//            return
-//        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
@@ -152,6 +150,13 @@ class TodoDetailViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun saveSharedTodo(card: TodoShareCard) {
+        viewModelScope.launch {
+            val todo = card.toTodoTask()
+            saveSharedTodoUseCase(todo)
         }
     }
 

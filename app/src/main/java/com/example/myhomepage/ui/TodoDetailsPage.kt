@@ -199,6 +199,7 @@ fun DeleteButton(deleteClick : () -> Unit){
         Text(
             "删除",
             fontSize = 20.sp,
+            color = WeComposeTheme.colors.textSecondary,
             fontWeight = FontWeight.Bold,
         )
     }

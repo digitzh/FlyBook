@@ -16,4 +16,15 @@ public interface ConversationMemberMapper extends BaseMapper<ConversationMember>
             "WHERE conversation_id = #{conversationId} AND user_id != #{senderId}")
     void incrementUnreadCount(@Param("conversationId") Long conversationId,
                               @Param("senderId") Long senderId);
+
+    // 清除某个会话的未读消息数
+    @Update("UPDATE conversation_members SET unread_count = 0 " +
+            "WHERE conversation_id = #{conversationId} AND user_id = #{userId}")
+    void clearUnreadCount(@Param("conversationId") Long conversationId,
+                          @Param("userId") Long userId);
+
+    // 清除用户所有会话的未读消息数
+    @Update("UPDATE conversation_members SET unread_count = 0 " +
+            "WHERE user_id = #{userId}")
+    void clearAllUnreadCount(@Param("userId") Long userId);
 }

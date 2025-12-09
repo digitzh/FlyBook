@@ -86,6 +86,28 @@ public class ConversationController {
     }
 
     /**
+     * 清除某个会话的未读消息数
+     * URL: POST /api/conversations/unread/clear?conversationId=1
+     */
+    @PostMapping("/unread/clear")
+    public Result<Void> clearUnreadCount(@RequestParam Long conversationId) {
+        Long userId = getUserId();
+        conversationService.clearUnreadCount(conversationId, userId);
+        return Result.success();
+    }
+
+    /**
+     * 清除用户所有会话的未读消息数
+     * URL: POST /api/conversations/unread/clear-all
+     */
+    @PostMapping("/unread/clear-all")
+    public Result<Void> clearAllUnreadCount() {
+        Long userId = getUserId();
+        conversationService.clearAllUnreadCount(userId);
+        return Result.success();
+    }
+
+    /**
      * 获取用户ID，优先使用请求体中的 userId，否则使用 UserContext 中的
      */
     private Long getUserId() {

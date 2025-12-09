@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytedance.entity.Conversation;
 import com.bytedance.entity.ConversationMember;
 import com.bytedance.mapper.ConversationMapper;
+import com.bytedance.mapper.ConversationMemberMapper;
 import com.bytedance.repository.IConversationMemberRepository;
 import com.bytedance.repository.IConversationRepository;
 import com.bytedance.service.IConversationService;
@@ -31,18 +32,21 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     private final AddMembersUseCase addMembersUseCase;
     private final IConversationRepository conversationRepository;
     private final IConversationMemberRepository conversationMemberRepository;
+    private final ConversationMemberMapper conversationMemberMapper;
 
     @Autowired
     public ConversationServiceImpl(CreateConversationUseCase createConversationUseCase,
                                   GetConversationListUseCase getConversationListUseCase,
                                   AddMembersUseCase addMembersUseCase,
                                   IConversationRepository conversationRepository,
-                                  IConversationMemberRepository conversationMemberRepository) {
+                                  IConversationMemberRepository conversationMemberRepository,
+                                  ConversationMemberMapper conversationMemberMapper) {
         this.createConversationUseCase = createConversationUseCase;
         this.getConversationListUseCase = getConversationListUseCase;
         this.addMembersUseCase = addMembersUseCase;
         this.conversationRepository = conversationRepository;
         this.conversationMemberRepository = conversationMemberRepository;
+        this.conversationMemberMapper = conversationMemberMapper;
     }
 
     @Override
@@ -94,5 +98,15 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         }
 
         return null;
+    }
+
+    @Override
+    public void clearUnreadCount(Long conversationId, Long userId) {
+        conversationMemberMapper.clearUnreadCount(conversationId, userId);
+    }
+
+    @Override
+    public void clearAllUnreadCount(Long userId) {
+        conversationMemberMapper.clearAllUnreadCount(userId);
     }
 }

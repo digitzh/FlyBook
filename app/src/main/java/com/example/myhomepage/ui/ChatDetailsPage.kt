@@ -59,6 +59,12 @@ fun ChatDetailsPage(
 
     LaunchedEffect(chat.conversationId) {
         chat.conversationId?.let { cid ->
+            viewModel.clearUnreadMessage(cid)
+        }
+    }
+
+    LaunchedEffect(chat.conversationId) {
+        chat.conversationId?.let { cid ->
             viewModel.syncChatHistory(cid)
         }
     }

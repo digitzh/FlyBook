@@ -58,6 +58,11 @@ data class SendMessageRequest(
 )
 
 @Serializable
+data class ClearUnreadRequest(
+    val conversationId: Long,
+)
+
+@Serializable
 data class SendMessageData(
     val messageId: Long,
     val conversationId: Long,
@@ -165,6 +170,19 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
                 if (apiResponse.code == 0) apiResponse.data else null
             } else null
         } catch (e: Exception) { null }
+    }
+
+    suspend fun clearUnread(userId:String, conversationId:Long) : Unit = withContext(Dispatchers.IO){
+        try{
+            val requestBody = json.encodeToString(ClearUnreadRequest(conversationId)).toRequestBody(jsonMediaType)
+            val request = Request.Builder().url("$baseUrl/api/conversations/unread/clear?conversationId="+conversationId.toString()).post(requestBody).addHeader("X-User-Id", userId).build()
+            val response = client.newCall(request).execute()
+//            val responseBody = response.body?.string() ?: return@withContext null
+//            if (response.isSuccessful) {
+//                val apiResponse = json.decodeFromString<ApiResponse<SendMessageData>>(responseBody)
+//                if (apiResponse.code == 0) apiResponse.data else null
+//            } else null
+        } catch (e: Exception){ null }
     }
 
     suspend fun getMessageHistory(userId: String, conversationId: Long): List<MessageVO> = withContext(Dispatchers.IO) {

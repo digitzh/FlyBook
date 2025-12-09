@@ -190,6 +190,10 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
+    suspend fun clearUnreadMessage(conversationId: Long){
+        val userId = currentUserId ?: return
+        apiService.clearUnread(userId,conversationId)
+    }
 
   private suspend fun reloadMessagesFromDb(conversationId: Long) {
     val chat = chats.find { it.conversationId == conversationId } ?: return

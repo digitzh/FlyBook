@@ -9,9 +9,9 @@ spring:
     username: root
     password: Chubao88!
   redis:
-    host: 127.0.0.1
+    host: 192.168.223.130
     port: 6379
-    password:  # 如果有密码填这里
+    password: Chubao88! # 如果有密码填这里
     database: 0
     timeout: 3000ms
 jackson:

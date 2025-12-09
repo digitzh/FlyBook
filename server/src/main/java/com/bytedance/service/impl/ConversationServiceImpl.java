@@ -16,6 +16,10 @@ import com.bytedance.vo.ConversationVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.bytedance.utils.RedisUtils;
+import cn.hutool.json.JSONUtil; // 引入 Hutool JSON 工具
+import java.util.concurrent.TimeUnit;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +53,9 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         this.conversationMemberRepository = conversationMemberRepository;
         this.conversationMemberMapper = conversationMemberMapper;
     }
+
+    @Autowired
+    private RedisUtils redisUtils; // 【注入 Redis 工具类】
 
     @Override
     public long createConversation(String name, Integer type, Long ownerId) {

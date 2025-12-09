@@ -91,8 +91,13 @@ private fun ChatListItem(chat: Chat, modifier: Modifier = Modifier) {
     val hasUnread = chat.unreadCount > 0
 
     Row(modifier.fillMaxWidth()) {
-        if (chat.isGroupChat && chat.avatarUrl != null) {
-            AsyncImage(model = chat.avatarUrl, contentDescription = chat.displayName, modifier = Modifier.padding(8.dp).size(48.dp).unread(hasUnread, WeComposeTheme.colors.badge).clip(RoundedCornerShape(4.dp)), contentScale = ContentScale.Crop, error = painterResource(chat.friend.avatar))
+        if (chat.isGroupChat) {
+            // 群聊：使用静态图标
+            Image(
+                painterResource(com.example.myhomepage.R.drawable.ic_contact_group),
+                chat.displayName,
+                Modifier.padding(8.dp).size(48.dp).unread(hasUnread, WeComposeTheme.colors.badge).clip(RoundedCornerShape(4.dp))
+            )
         } else {
             Image(painterResource(chat.friend.avatar), chat.friend.name, Modifier.padding(8.dp).size(48.dp).unread(hasUnread, WeComposeTheme.colors.badge).clip(RoundedCornerShape(4.dp)))
         }

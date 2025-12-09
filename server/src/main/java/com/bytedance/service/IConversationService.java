@@ -24,4 +24,17 @@ public interface IConversationService extends IService<Conversation> {
      * @return 如果存在相同的群聊，返回其ID；否则返回null
      */
     Long findExistingConversation(String name, Integer type, List<Long> memberIds);
+
+    /**
+     * 清除某个会话的未读消息数
+     * @param conversationId 会话ID
+     * @param userId 用户ID
+     */
+    void clearUnreadCount(Long conversationId, Long userId);
+
+    /**
+     * 清除用户所有会话的未读消息数
+     * @param userId 用户ID
+     */
+    void clearAllUnreadCount(Long userId);
 }

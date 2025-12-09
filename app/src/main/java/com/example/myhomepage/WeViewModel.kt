@@ -1,6 +1,10 @@
 package com.example.myhomepage
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -18,16 +22,20 @@ import com.example.myhomepage.database.MessageEntity
 import com.example.myhomepage.database.UserEntity
 import com.example.myhomepage.network.ApiService
 import com.example.myhomepage.network.ConversationVO
+import com.example.myhomepage.network.ImageContent
+import com.example.myhomepage.network.VideoContent
 import com.example.myhomepage.network.WebSocketManager
 import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.ui.theme.TodoType
 import com.example.myhomepage.ui.theme.WeComposeTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,54 +57,26 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
   val users = userDao.getAllUsers()
 
   init {
+    // 1. WebSocket 监听
     viewModelScope.launch {
       WebSocketManager.getInstance().receivedMessages.collect { jsonStr ->
         if (!jsonStr.isNullOrBlank()) handleWebSocketMessage(jsonStr)
       }
     }
-  }
-
-  /**
-   * 同步用户数据从服务端到本地数据库
-   */
-  suspend fun syncUsersFromServer() {
-    try {
-      val userList = apiService.getUserList()
-      if (userList.isNotEmpty()) {
-        val userEntities = userList.map { userVO ->
-          UserEntity(
-            userId = userVO.userId,
-            username = userVO.username,
-            avatarUrl = userVO.avatarUrl,
-            password = null, // 不保存密码
-            createdTime = System.currentTimeMillis()
-          )
-        }
-        userDao.insertUsers(userEntities)
-        android.util.Log.d("WeViewModel", "同步了 ${userEntities.size} 个用户到本地数据库")
-      }
-    } catch (e: Exception) {
-      android.util.Log.e("WeViewModel", "同步用户数据失败", e)
+    // 2. 启动时也尝试同步一次（异步）
+    viewModelScope.launch {
+      syncUsersFromServer()
     }
   }
 
   suspend fun setCurrentUserIdAndLoadUser(userId: String) {
     currentUserId = userId
     val userIdLong = userId.toLongOrNull()
-    if (userIdLong != null) {
-      // 先从本地数据库查询
-      currentUser = userDao.getUserById(userIdLong)
-      // 如果本地数据库没有，尝试从服务端同步后再查询
-      if (currentUser == null) {
-        syncUsersFromServer()
-        currentUser = userDao.getUserById(userIdLong)
-      }
-    }
+    if (userIdLong != null) currentUser = userDao.getUserById(userIdLong)
   }
 
   var chats by mutableStateOf(listOf<Chat>())
 
-  // 【修改】initbacklogList 使用 Long ID
   val initbacklogList by mutableStateOf(listOf(
     Backlog(-1L, "周报", "完成周报", "2025-12-03", TodoType.FILE),
     Backlog(-2L, "接口设计文档", "完成接口设计文档", "2025-12-05", TodoType.FILE),
@@ -114,34 +94,91 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
+  // 【修改】重命名为 syncUsersFromServer，改为 suspend 和 public
+  // 这样 MainActivity 就可以调用它并在登录前等待数据同步完成
+  suspend fun syncUsersFromServer() {
+    try {
+      val remoteUsers = apiService.getUserList()
+      if (remoteUsers.isNotEmpty()) {
+        val entities = remoteUsers.map { vo -> UserEntity(userId = vo.userId, username = vo.username, avatarUrl = vo.avatarUrl) }
+        userDao.insertUsers(entities)
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
+  }
+
+  // 发送图片
+  fun sendImage(conversationId: Long, uri: Uri) {
+    val userId = currentUserId ?: return
+    viewModelScope.launch(Dispatchers.IO) {
+      try {
+        val context = getApplication<Application>().applicationContext
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 40, outputStream)
+        val bytes = outputStream.toByteArray()
+        val base64Str = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+
+        val contentJson = Json.encodeToString(ImageContent(base64Str))
+        sendMessageInternal(conversationId, userId, contentJson, 2)
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
+  }
+
+  // 发送视频
+  fun sendVideo(conversationId: Long, uri: Uri) {
+    val userId = currentUserId ?: return
+    val contentJson = Json.encodeToString(VideoContent(uri.toString()))
+    viewModelScope.launch {
+      sendMessageInternal(conversationId, userId, contentJson, 3)
+    }
+  }
+
   // 发送待办卡片
   fun sendTodoCard(conversationId: Long, card: TodoShareCard, onSuccess: () -> Unit) {
     val userId = currentUserId ?: return
     val cardJson = Json.encodeToString(card)
     viewModelScope.launch {
-      // 【修改】传入 msgType=5
-      val result = apiService.sendMessage(userId, conversationId, cardJson, msgType = 5)
-      if (result != null) {
-        val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val entity = MessageEntity(
-          msgId = result.messageId,
-          conversationId = conversationId,
-          senderId = userId.toLong(),
-          content = cardJson,
-          time = timeStr,
-          timestamp = System.currentTimeMillis(),
-          msgType = 5 // 卡片类型
-        )
-        messageDao.insertMessage(entity)
-        val chat = chats.find { it.conversationId == conversationId }
-        // 【关键】更新内存时传入 type=5
-        chat?.msgs?.add(Msg(User.Me, cardJson, timeStr, type = 5).apply { read = true })
-        onSuccess()
+      sendMessageInternal(conversationId, userId, cardJson, 5)
+      onSuccess()
+    }
+  }
+
+  fun boom(chat: Chat, msg: String) {
+    val cid = chat.conversationId
+    val uid = currentUserId
+    if (cid != null && uid != null) {
+      viewModelScope.launch {
+        sendMessageInternal(cid, uid, msg, 1)
       }
     }
   }
 
-  // 同步历史消息
+  // 统一发送逻辑
+  private suspend fun sendMessageInternal(conversationId: Long, userId: String, content: String, msgType: Int) {
+    val result = apiService.sendMessage(userId, conversationId, content, msgType)
+    if (result != null) {
+      val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+      val entity = MessageEntity(
+        msgId = result.messageId,
+        conversationId = conversationId,
+        senderId = userId.toLong(),
+        content = content,
+        time = timeStr,
+        timestamp = System.currentTimeMillis(),
+        msgType = msgType
+      )
+      messageDao.insertMessage(entity)
+
+      val chat = chats.find { it.conversationId == conversationId }
+      chat?.msgs?.add(Msg(User.Me, content, timeStr, type = msgType).apply { read = true })
+    }
+  }
+
   fun syncChatHistory(conversationId: Long) {
     val userId = currentUserId ?: return
     viewModelScope.launch {
@@ -152,7 +189,7 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
         val serverFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
         remoteMessages.forEach { msgVo ->
-          // 【关键修复】同样统一先解 WsContent
+          // 【关键修复】统一先解 WsContent
           val realContent = try {
             val contentObj = parser.decodeFromString<WsContent>(msgVo.content)
             contentObj.text
@@ -170,7 +207,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
             }
           } catch (e: Exception) { }
 
-          // 用 realContent 去重
           val existing = messageDao.getMessagesByConversationId(conversationId).find { it.msgId == msgVo.messageId }
           if (existing == null) {
             val entity = MessageEntity(
@@ -190,10 +226,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-    suspend fun clearUnreadMessage(conversationId: Long){
-        val userId = currentUserId ?: return
-        apiService.clearUnread(userId,conversationId)
-    }
 
   private suspend fun reloadMessagesFromDb(conversationId: Long) {
     val chat = chats.find { it.conversationId == conversationId } ?: return
@@ -204,31 +236,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
         User(entity.senderId.toString(), getNameForUser(entity.senderId), getAvatarForUser(entity.senderId))
       }
       chat.msgs.add(Msg(senderUser, entity.content, entity.time, type = entity.msgType).apply { read = true })
-    }
-  }
-
-  fun boom(chat: Chat, msg: String) {
-    val cid = chat.conversationId
-    val uid = currentUserId
-    if (cid != null && uid != null) {
-      viewModelScope.launch {
-        // 【修改】传入 msgType=1
-        val result = apiService.sendMessage(uid, cid, msg, msgType = 1)
-        if (result != null) {
-          val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-          chat.msgs.add(Msg(User.Me, msg, timeStr, type = 1).apply { read = true })
-          val entity = MessageEntity(
-            msgId = result.messageId,
-            conversationId = cid,
-            senderId = uid.toLong(),
-            content = msg,
-            time = timeStr,
-            timestamp = System.currentTimeMillis(),
-            msgType = 1
-          )
-          messageDao.insertMessage(entity)
-        }
-      }
     }
   }
 
@@ -312,8 +319,8 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
         wsMsg.content
       }
 
-      // 对于卡片(type=5)，realContent 就是 "{\"todoId\":1...}" (JSON字符串)
-      // 对于文本(type=1)，realContent 就是 "你好"
+      // 此时 realContent 已经是我们发送时的原始 JSON 字符串了
+      // 例如： "{\"base64\": \"...\"}" 或 "{\"link\": \"...\"}"
 
       val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(wsMsg.createdTime))
 
@@ -330,7 +337,13 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       viewModelScope.launch { messageDao.insertMessage(entity) }
 
       if (chat != null) {
-        chat.lastContent = if (wsMsg.msgType == 5) "[待办事项]" else realContent
+        // 列表摘要显示
+        chat.lastContent = when(wsMsg.msgType) {
+          2 -> "[图片]"
+          3 -> "[视频]"
+          5 -> "[待办事项]"
+          else -> realContent
+        }
         chat.lastTime = timeStr
         if (wsMsg.senderId.toString() != currentUserId) chat.unreadCount++
 
@@ -339,6 +352,7 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
           val senderUser = if (wsMsg.senderId.toString() == currentUserId) User.Me else {
             User(wsMsg.senderId.toString(), getNameForUser(wsMsg.senderId), getAvatarForUser(wsMsg.senderId))
           }
+          // 传入正确的 msgType 和清洗后的 content
           chat.msgs.add(Msg(senderUser, realContent, timeStr, type = wsMsg.msgType).apply { read = true })
         }
       } else {

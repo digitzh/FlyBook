@@ -15,7 +15,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.myhomepage.network.WebSocketManager
-import com.example.myhomepage.share.OpenSharedTodoDetail
 import com.example.myhomepage.share.ShareTodoToChat
 import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.todolist.TodoAppContainer
@@ -30,9 +29,9 @@ import kotlinx.serialization.json.Json
 import java.net.URLDecoder
 import java.net.URLEncoder
 
-// 新增路由定义
 @Serializable data class SelectConversation(val cardJson: String)
 @Serializable data class SharedTodoDetails(val cardJson: String)
+@Serializable object ImagePreview
 
 class MainActivity : ComponentActivity() {
 
@@ -63,7 +62,6 @@ class MainActivity : ComponentActivity() {
             WeComposeTheme(viewModel.theme) {
                 val navController = rememberNavController()
 
-                // 【实现分享接口】
                 val shareTodoToChat = object : ShareTodoToChat {
                     override fun share(card: TodoShareCard) {
                         val json = Json.encodeToString(card)
@@ -71,8 +69,8 @@ class MainActivity : ComponentActivity() {
                         navController.navigate(SelectConversation(encoded))
                     }
                 }
-                // 【实现点击卡片查看详情接口】
-                val openSharedTodoDetail = object : OpenSharedTodoDetail {
+
+                val openSharedTodoDetail = object : com.example.myhomepage.share.OpenSharedTodoDetail {
                     override fun open(card: TodoShareCard) {
                         val json = Json.encodeToString(card)
                         val encoded = URLEncoder.encode(json, "UTF-8")
@@ -92,7 +90,6 @@ class MainActivity : ComponentActivity() {
                             { navController.navigate(TodoDetails(it.id)) },
                             { navController.navigate(Login) },
                             { navController.navigate(todoAdd) },
-                            // 传递分享逻辑
                             onShareTodo = { card -> shareTodoToChat.share(card) }
                         )
                     }
@@ -103,28 +100,43 @@ class MainActivity : ComponentActivity() {
                         ChatDetailsPage(
                             viewModel,
                             it.toRoute<ChatDetails>().userId,
-                            // 点击卡片进入详情页
-                            onTodoCardClick = openSharedTodoDetail::open
+                            onTodoCardClick = { card -> openSharedTodoDetail.open(card) },
+                            // 【新增】图片预览跳转
+                            onImageClick = {
+                                navController.navigate(ImagePreview)
+                            }
                         )
                     }
 
-                    // 选择会话页面
+                    // 【新增】图片预览页
+                    composable<ImagePreview> {
+                        val base64 = viewModel.currentPreviewImageBase64
+                        if (base64 != null) {
+                            ImagePreviewPage(base64) {
+                                navController.popBackStack()
+                            }
+                        }
+                    }
+
                     composable<SelectConversation> { entry ->
                         val json = URLDecoder.decode(entry.toRoute<SelectConversation>().cardJson, "UTF-8")
                         val card = Json.decodeFromString<TodoShareCard>(json)
                         SelectConversationPage(
                             viewModel, card,
                             onBack = { navController.popBackStack() },
-                            onSent = { navController.popBackStack() } // 发送成功后返回
+                            onSent = { navController.popBackStack() }
                         )
                     }
 
-                    // 卡片点击详情页面
                     composable<SharedTodoDetails> { entry ->
                         val json = URLDecoder.decode(entry.toRoute<SharedTodoDetails>().cardJson, "UTF-8")
                         val card = Json.decodeFromString<TodoShareCard>(json)
-                        SharedTodoDetailsPage(card, onBack = { navController.popBackStack() }, onSaveClick = { shareCard -> addViewModel.saveSharedTodo(shareCard) })
+                        SharedTodoDetailsPage(card, onBack = { navController.popBackStack() }, onSaveClick = {
+                            addViewModel.saveSharedTodo(it)
+                            navController.popBackStack()
+                        })
                     }
+
                     composable<TodoDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
@@ -152,7 +164,6 @@ class MainActivity : ComponentActivity() {
                     composable<Login> {
                         LoginPage { userId ->
                             lifecycleScope.launch {
-                                // 先同步用户数据，再设置当前用户
                                 viewModel.syncUsersFromServer()
                                 viewModel.setCurrentUserIdAndLoadUser(userId)
                                 WebSocketManager.getInstance().connect(userId)

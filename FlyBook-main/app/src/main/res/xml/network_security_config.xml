@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许明文通信到本地主机（用于开发环境） -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android模拟器访问PC本地主机的特殊地址 -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- 本地回环地址 -->
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+    
+    <!-- 生产环境应该移除上述配置，只使用HTTPS/WSS -->
+</network-security-config>
+

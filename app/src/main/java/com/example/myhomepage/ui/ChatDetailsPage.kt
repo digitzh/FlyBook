@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -28,16 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.myhomepage.R
 import com.example.myhomepage.WeViewModel
 import com.example.myhomepage.data.Msg
@@ -58,7 +54,8 @@ data class ChatDetails(val userId: String)
 fun ChatDetailsPage(
     viewModel: WeViewModel,
     userId: String,
-    onTodoCardClick: (TodoShareCard) -> Unit
+    onTodoCardClick: (TodoShareCard) -> Unit,
+    onImageClick: () -> Unit // 【新增】回调
 ) {
     val chat = viewModel.chats.find { it.friend.id == userId }
 
@@ -80,13 +77,12 @@ fun ChatDetailsPage(
     }
 
     var shakingTime by remember { mutableIntStateOf(0) }
-    var bottomSheetType by remember { mutableIntStateOf(0) } // 0=None, 1=Emoji, 2=More
+    var bottomSheetType by remember { mutableIntStateOf(0) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val listState = rememberLazyListState()
 
-    // 媒体选择器
     val photoPicker = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { chat.conversationId?.let { cid -> viewModel.sendImage(cid, it) } }
     }
@@ -115,7 +111,15 @@ fun ChatDetailsPage(
                 items(chat.msgs.size) { index ->
                     val msg = chat.msgs[index]
                     msg.apply { read = true }
-                    MessageItem(msg, shakingTime, chat.msgs.size - index - 1, onTodoCardClick)
+                    // 【修改】传入 onImageClick
+                    MessageItem(
+                        msg, shakingTime, chat.msgs.size - index - 1,
+                        onTodoCardClick,
+                        onImageClick = { base64 ->
+                            viewModel.currentPreviewImageBase64 = base64
+                            onImageClick()
+                        }
+                    )
                 }
             }
         }
@@ -170,7 +174,6 @@ fun MediaSelectPanel(onPhotoClick: () -> Unit, onVideoClick: () -> Unit) {
             Text("图片", fontSize = 14.sp, color = WeComposeTheme.colors.textSecondary)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onVideoClick() }) {
-            // 这里暂用 ic_moments 图标代替视频图标
             Icon(painterResource(R.drawable.ic_moments), null, Modifier.size(48.dp), tint = WeComposeTheme.colors.textPrimary)
             Text("视频", fontSize = 14.sp, color = WeComposeTheme.colors.textSecondary)
         }
@@ -199,7 +202,13 @@ fun ChatBottomBar(onBombClicked: (String) -> Unit, onEmojiClicked: () -> Unit, o
 }
 
 @Composable
-fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int, onTodoCardClick: (TodoShareCard) -> Unit = {}) {
+fun MessageItem(
+    msg: Msg,
+    shakingTime: Int,
+    shakingLevel: Int,
+    onTodoCardClick: (TodoShareCard) -> Unit = {},
+    onImageClick: (String) -> Unit = {}
+) {
     val shakingAngleBubble = remember { Animatable(0f) }
     val isMe = msg.from == User.Me
     val alignment = if (isMe) Arrangement.End else Arrangement.Start
@@ -238,7 +247,16 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int, onTodoCardClick: 
                         } catch (e: Exception) { null }
                     }
                     if (bitmap != null) {
-                        Image(bitmap, "Image", Modifier.widthIn(max = 200.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.FillWidth)
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "Image",
+                            modifier = Modifier
+                                .widthIn(max = 200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                // 【新增】点击回调
+                                .clickable { onImageClick(base64Str) },
+                            contentScale = ContentScale.FillWidth
+                        )
                     } else {
                         Text("[图片数据损坏]", Modifier.background(bubbleColor, RoundedCornerShape(4.dp)).padding(8.dp))
                     }
@@ -264,6 +282,7 @@ fun MessageItem(msg: Msg, shakingTime: Int, shakingLevel: Int, onTodoCardClick: 
     }
 }
 
+// ... TodoMessageCard & EmojiGridView 保持不变 ...
 @Composable
 fun TodoMessageCard(jsonStr: String, bgColor: Color, onClick: (TodoShareCard) -> Unit) {
     val card = remember(jsonStr) {

@@ -56,14 +56,15 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
   private val apiService = ApiService()
   val users = userDao.getAllUsers()
 
+  // 【新增】暂存当前要预览的图片数据
+  var currentPreviewImageBase64 by mutableStateOf<String?>(null)
+
   init {
-    // 1. WebSocket 监听
     viewModelScope.launch {
       WebSocketManager.getInstance().receivedMessages.collect { jsonStr ->
         if (!jsonStr.isNullOrBlank()) handleWebSocketMessage(jsonStr)
       }
     }
-    // 2. 启动时也尝试同步一次（异步）
     viewModelScope.launch {
       syncUsersFromServer()
     }
@@ -94,8 +95,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  // 【修改】重命名为 syncUsersFromServer，改为 suspend 和 public
-  // 这样 MainActivity 就可以调用它并在登录前等待数据同步完成
   suspend fun syncUsersFromServer() {
     try {
       val remoteUsers = apiService.getUserList()
@@ -108,7 +107,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  // 发送图片
   fun sendImage(conversationId: Long, uri: Uri) {
     val userId = currentUserId ?: return
     viewModelScope.launch(Dispatchers.IO) {
@@ -129,7 +127,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  // 发送视频
   fun sendVideo(conversationId: Long, uri: Uri) {
     val userId = currentUserId ?: return
     val contentJson = Json.encodeToString(VideoContent(uri.toString()))
@@ -138,7 +135,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  // 发送待办卡片
   fun sendTodoCard(conversationId: Long, card: TodoShareCard, onSuccess: () -> Unit) {
     val userId = currentUserId ?: return
     val cardJson = Json.encodeToString(card)
@@ -158,7 +154,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
-  // 统一发送逻辑
   private suspend fun sendMessageInternal(conversationId: Long, userId: String, content: String, msgType: Int) {
     val result = apiService.sendMessage(userId, conversationId, content, msgType)
     if (result != null) {
@@ -189,7 +184,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
         val serverFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
         remoteMessages.forEach { msgVo ->
-          // 【关键修复】统一先解 WsContent
           val realContent = try {
             val contentObj = parser.decodeFromString<WsContent>(msgVo.content)
             contentObj.text
@@ -213,7 +207,7 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
               msgId = msgVo.messageId,
               conversationId = conversationId,
               senderId = msgVo.senderId,
-              content = realContent, // 存入清洗后的内容
+              content = realContent,
               time = displayTime,
               timestamp = timestamp,
               msgType = msgVo.msgType
@@ -225,7 +219,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       reloadMessagesFromDb(conversationId)
     }
   }
-
 
   private suspend fun reloadMessagesFromDb(conversationId: Long) {
     val chat = chats.find { it.conversationId == conversationId } ?: return
@@ -310,26 +303,19 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       val wsMsg = parser.decodeFromString<WsMessage>(jsonStr)
       val chat = chats.find { it.conversationId == wsMsg.conversationId }
 
-      // 【关键修复】无论 type 是多少，服务端都套了一层 {"text": "..."}
-      // 所以必须先解开 WsContent，取出 text
       val realContent = try {
         parser.decodeFromString<WsContent>(wsMsg.content).text
       } catch (e: Exception) {
-        // 如果解不开（万一服务端改了），就用原串保底
         wsMsg.content
       }
 
-      // 此时 realContent 已经是我们发送时的原始 JSON 字符串了
-      // 例如： "{\"base64\": \"...\"}" 或 "{\"link\": \"...\"}"
-
       val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(wsMsg.createdTime))
 
-      // 存库
       val entity = MessageEntity(
         msgId = wsMsg.messageId,
         conversationId = wsMsg.conversationId,
         senderId = wsMsg.senderId,
-        content = realContent, // 存入清洗后的内容
+        content = realContent,
         time = timeStr,
         timestamp = wsMsg.createdTime,
         msgType = wsMsg.msgType
@@ -337,7 +323,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       viewModelScope.launch { messageDao.insertMessage(entity) }
 
       if (chat != null) {
-        // 列表摘要显示
         chat.lastContent = when(wsMsg.msgType) {
           2 -> "[图片]"
           3 -> "[视频]"
@@ -352,7 +337,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
           val senderUser = if (wsMsg.senderId.toString() == currentUserId) User.Me else {
             User(wsMsg.senderId.toString(), getNameForUser(wsMsg.senderId), getAvatarForUser(wsMsg.senderId))
           }
-          // 传入正确的 msgType 和清洗后的 content
           chat.msgs.add(Msg(senderUser, realContent, timeStr, type = wsMsg.msgType).apply { read = true })
         }
       } else {

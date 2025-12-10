@@ -125,19 +125,11 @@ FlyBook/
 
 - 聊天列表展示
 - 创建单聊和群聊会话
-- 发送文本消息
+- 发送文本/图片消息
 - 未读消息提醒
 - 会话界面历史消息展示
 - 发送消息展示
 - 部分Emoji表情的添加与动画效果
-- 隐藏聊天
-
-#### 📄待完成
-
-- 实时消息推送
-- 消息历史记录同步
-- 未读消息计数
-- 会话成员管理
 
 ### 待办任务模块
 
@@ -161,10 +153,6 @@ FlyBook/
 - 任务列表展示（网格布局）
 - 任务与聊天消息关联
 
-#### 📄待完成
-
-
-
 ### 个人主页模块
 
 主要提供用户的基本信息，以及个人账户的设置模块等。
@@ -182,12 +170,12 @@ FlyBook/
 
 **客户端**:
 - Android Studio Otter | 2025.2.1 
-- JDK 11
+- JDK 17
 - Android SDK API 24（最低支持 Android 7.0）
 - Gradle 8.13.0
 
 **服务端**:
-- JDK 11
+- JDK 17
 - Maven 4.0.0
 - MySQL
 
@@ -248,6 +236,7 @@ FlyBook/
 
 - `POST /api/users/register` - 用户注册
 - `POST /api/users/login` - 用户登录
+- `GET /api/users/list` - 获取用户列表
 
 ### 会话相关
 
@@ -258,7 +247,9 @@ FlyBook/
 ### 消息相关
 
 - `POST /api/messages/send` - 发送消息
-- `GET /api/messages/sync` - 同步消息历史（📄待完成）
+- `GET /api/messages/sync` - 同步消息历史
+- `POST /api/conversations/unread/clear` - 清空单会话未读消息
+- `POST /api/conversations/unread/clear-all` - 清空所有会话未读消息
 
 ### WebSocket
 

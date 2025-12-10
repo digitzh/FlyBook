@@ -26,8 +26,6 @@ class TodoListViewModelFactory(
     }
 }
 
-//详情页 ViewModel 的 Factory
-
 class TodoDetailViewModelFactory(
     private val container: TodoAppContainer
 ) : ViewModelProvider.Factory {
@@ -37,7 +35,8 @@ class TodoDetailViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return TodoDetailViewModel(
                 observeTodoDetailUseCase = container.observeTodoDetailUseCase,
-                saveTodoUseCase = container.saveTodoUseCase
+                saveTodoUseCase = container.saveTodoUseCase,
+                saveSharedTodoUseCase = container.saveSharedTodoUseCase
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: $modelClass")

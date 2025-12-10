@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.myhomepage.network.WebSocketManager
+import com.example.myhomepage.share.OpenSharedTodoDetail
 import com.example.myhomepage.share.ShareTodoToChat
 import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.todolist.TodoAppContainer
@@ -70,6 +71,14 @@ class MainActivity : ComponentActivity() {
                         navController.navigate(SelectConversation(encoded))
                     }
                 }
+                // 【实现点击卡片查看详情接口】
+                val openSharedTodoDetail = object : OpenSharedTodoDetail {
+                    override fun open(card: TodoShareCard) {
+                        val json = Json.encodeToString(card)
+                        val encoded = URLEncoder.encode(json, "UTF-8")
+                        navController.navigate(SharedTodoDetails(encoded))
+                    }
+                }
 
                 NavHost(navController, Login) {
                     composable<Home> {
@@ -95,15 +104,11 @@ class MainActivity : ComponentActivity() {
                             viewModel,
                             it.toRoute<ChatDetails>().userId,
                             // 点击卡片进入详情页
-                            onTodoCardClick = { card ->
-                                val json = Json.encodeToString(card)
-                                val encoded = URLEncoder.encode(json, "UTF-8")
-                                navController.navigate(SharedTodoDetails(encoded))
-                            }
+                            onTodoCardClick = openSharedTodoDetail::open
                         )
                     }
 
-                    // 【新增】选择会话页面
+                    // 选择会话页面
                     composable<SelectConversation> { entry ->
                         val json = URLDecoder.decode(entry.toRoute<SelectConversation>().cardJson, "UTF-8")
                         val card = Json.decodeFromString<TodoShareCard>(json)
@@ -114,13 +119,12 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // 【新增】只读详情页面
+                    // 卡片点击详情页面
                     composable<SharedTodoDetails> { entry ->
                         val json = URLDecoder.decode(entry.toRoute<SharedTodoDetails>().cardJson, "UTF-8")
                         val card = Json.decodeFromString<TodoShareCard>(json)
-                        SharedTodoDetailsPage(card, onBack = { navController.popBackStack() })
+                        SharedTodoDetailsPage(card, onBack = { navController.popBackStack() }, onSaveClick = { shareCard -> addViewModel.saveSharedTodo(shareCard) })
                     }
-
                     composable<TodoDetails>(
                         enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
                         exitTransition = { slideOutHorizontally(targetOffsetX = { it }) }

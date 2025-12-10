@@ -62,6 +62,10 @@ class TodoAppContainer(context: Context) {
     val observeTodoDetailUseCase = ObserveTodoDetailUseCase(repository)
     val saveTodoUseCase = SaveTodoUseCase(repository)
 
+    val saveSharedTodoUseCase = SaveTodoUseCase(repository)
+
+
+
     // 暴露给外面用的 Factory 属性
     val todoListViewModelFactory: ViewModelProvider.Factory
         get() = TodoListViewModelFactory(this)

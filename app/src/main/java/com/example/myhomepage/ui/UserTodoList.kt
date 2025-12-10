@@ -10,8 +10,13 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,12 +39,13 @@ import com.example.myhomepage.data.Chat
 import com.example.myhomepage.data.toBacklog
 import com.example.myhomepage.share.TodoShareCard
 import com.example.myhomepage.todolist.data.toBacklog
+import com.example.myhomepage.todolist.data.toShareCard
 import com.example.myhomepage.todolist.presentation.TodoListViewModel
 import com.example.myhomepage.ui.theme.TodoType
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
-fun TodoListTopBar(){
+fun TodoListTopBar() {
     WeTopBar(title = "待办事项")
 }
 
@@ -48,12 +54,12 @@ fun TodoListItem(
     backlog: Backlog,
     modifier: Modifier = Modifier,
     itemTodoClick: () -> Unit = {},
-    onLongPress: (IntOffset)->Unit = {},
-    onShare: () -> Unit = {} // 【新增】分享回调
+    onLongPress: (IntOffset) -> Unit = {}
 ) {
     var rowGlobalPosition by remember { mutableStateOf(Offset.Zero) }
     var rowSize by remember { mutableStateOf(IntOffset.Zero) }
 
+    // Row 中心点（用来作为长按菜单的参考坐标）
     val rowCenterOffset by remember(rowGlobalPosition, rowSize) {
         mutableStateOf(
             IntOffset(
@@ -62,6 +68,7 @@ fun TodoListItem(
             )
         )
     }
+
     Surface(
         modifier = modifier
             .onGloballyPositioned { layoutCoordinates ->
@@ -70,25 +77,28 @@ fun TodoListItem(
             }
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onTap = {itemTodoClick()},
-                    onLongPress = { offset ->
+                    onTap = { itemTodoClick() },
+                    onLongPress = { _ ->
                         onLongPress(rowCenterOffset)
                     }
                 )
             }
             .fillMaxWidth()
-            .aspectRatio(1f)
+            .aspectRatio(1f) // 正方形卡片
             .padding(4.dp),
         shape = RoundedCornerShape(12.dp),
         color = getTodoColorByType(backlog.type),
         shadowElevation = 2.dp
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // 内部内容：图标 + 标题 + 时间，居中
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -120,7 +130,9 @@ fun TodoListItem(
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center
                     )
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         backlog.time,
                         fontSize = 16.sp,
@@ -132,7 +144,7 @@ fun TodoListItem(
                 }
             }
 
-            // 完成状态图标
+            // 完成状态小勾
             if (backlog.complete) {
                 Box(
                     modifier = Modifier
@@ -148,22 +160,6 @@ fun TodoListItem(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
-                }
-            }
-
-            // 【新增】分享按钮 (右上角)
-            if (backlog.type != TodoType.MSG) { // 消息类型的待办通常不分享
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .size(28.dp)
-                        .background(Color(0x20000000), CircleShape) // 半透明背景
-                        .clickable { onShare() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 这里简单用文字代替图标，实际可用 R.drawable.ic_share
-                    Text("↗", color = WeComposeTheme.colors.textSecondary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
@@ -182,13 +178,14 @@ fun getTodoColorByType(type: TodoType): Color {
 @Composable
 fun TodoList(
     chats: List<Chat>,
-    listViewModel: TodoListViewModel,
-    onTodoClick: (Backlog) -> Unit,
-    addTodo: () -> Unit,
-    onShareTodo: (TodoShareCard) -> Unit // 【新增】接收分享动作
+    listViewModel: TodoListViewModel,       // 列表页 VM
+    onTodoClick: (Backlog) -> Unit,         // 点某个待办 → 去详情页
+    addTodo: () -> Unit,                    // 点新增 → 去 AddTodoPage
+    onShareTodo: (TodoShareCard) -> Unit    // 分享回调签名
 ) {
     val uiState by listViewModel.uiState.collectAsState()
 
+    // 业务待办转成 Backlog
     val todoBacklogs = uiState.todos.map { it.toBacklog() }
     val showChatsList = chats.mapNotNull { it.toBacklog() }
     val backlogList = todoBacklogs + showChatsList
@@ -211,6 +208,7 @@ fun TodoList(
                 .padding(padding)
         ) {
             TodoListTopBar()
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
@@ -220,7 +218,7 @@ fun TodoList(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(4.dp)
             ) {
-                itemsIndexed(backlogList) { index, backlog ->
+                itemsIndexed(backlogList) { _, backlog ->
                     if (backlog.type != TodoType.MSG) {
                         TodoListItem(
                             backlog = backlog,
@@ -229,25 +227,14 @@ fun TodoList(
                             onLongPress = { offset ->
                                 longPressedTodoId = backlog.id
                                 menuOffset = IntOffset(
-                                    x = offset.x.toInt() - 205,
-                                    y = offset.y.toInt() + 50
+                                    x = offset.x - 205,
+                                    y = offset.y + 50
                                 )
                                 showMenu = true
-                            },
-                            // 【新增】点击分享时的处理
-                            onShare = {
-                                val card = TodoShareCard(
-                                    todoId = backlog.id,
-                                    title = backlog.title,
-                                    description = backlog.text,
-                                    type = backlog.type,
-                                    deadline = backlog.time,
-                                    done = backlog.complete
-                                )
-                                onShareTodo(card)
                             }
                         )
                     } else {
+                        // 聊天产生的 Backlog，暂不支持长按菜单
                         TodoListItem(backlog)
                     }
                 }
@@ -264,6 +251,7 @@ fun TodoList(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 完成
                 TodoCompleteButton(
                     onClick = {
                         longPressedTodoId?.let { id ->
@@ -272,6 +260,23 @@ fun TodoList(
                         showMenu = false
                     }
                 )
+
+                // 分享到即时通信模块（使用当前回调 onShareTodo）
+                TodoShareButton(
+                    onClick = {
+                        longPressedTodoId?.let { id ->
+                            // 在 uiState 中找到对应 TodoTask，再转成 TodoShareCard
+                            val todo = uiState.todos.firstOrNull { it.id == id }
+                            if (todo != null) {
+                                val card = todo.toShareCard()
+                                onShareTodo(card)     // 这里接回 MainActivity 的实现
+                            }
+                        }
+                        showMenu = false
+                    }
+                )
+
+                // 删除
                 TodoDeleteButton(
                     onClick = {
                         longPressedTodoId?.let { id ->
@@ -295,7 +300,24 @@ fun TodoCompleteButton(onClick: () -> Unit) {
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "✓", color = Color.White, fontSize = 18.sp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "✓",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = "完成",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+        }
     }
 }
 
@@ -309,6 +331,54 @@ fun TodoDeleteButton(onClick: () -> Unit) {
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "✕", color = Color.White, fontSize = 18.sp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "✕",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = "删除",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun TodoShareButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .background(color = Color(0xFFE1E15A), shape = CircleShape)
+            .clickable { onClick() }
+            .padding(4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "\u269D",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = "分享",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 12.sp
+            )
+        }
     }
 }

@@ -1,15 +1,18 @@
 package com.example.myhomepage.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,7 +24,10 @@ import com.example.myhomepage.ui.theme.TodoType
 import com.example.myhomepage.ui.theme.WeComposeTheme
 
 @Composable
-fun SharedTodoDetailsPage(card: TodoShareCard, onBack: () -> Unit) {
+fun SharedTodoDetailsPage(card: TodoShareCard, onBack: () -> Unit, onSaveClick: (TodoShareCard) -> Unit) {
+
+    val context = LocalContext.current
+
     Column(
         Modifier
             .background(WeComposeTheme.colors.background)
@@ -33,29 +39,69 @@ fun SharedTodoDetailsPage(card: TodoShareCard, onBack: () -> Unit) {
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Image(
-                    painter = painterResource(when (card.type) {
-                        TodoType.FILE -> R.drawable.ic_contact_tag
-                        TodoType.CONF -> R.drawable.ic_contact_official
-                        TodoType.MSG -> R.drawable.ic_moments
-                        TodoType.OTHER -> R.drawable.ic_photos
-                    }),
+                    painter = painterResource(
+                        when (card.type) {
+                            TodoType.FILE -> R.drawable.ic_contact_tag
+                            TodoType.CONF -> R.drawable.ic_contact_official
+                            TodoType.MSG -> R.drawable.ic_moments
+                            TodoType.OTHER -> R.drawable.ic_photos
+                        }
+                    ),
                     contentDescription = null,
                     modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text(card.title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = WeComposeTheme.colors.textPrimary)
+                    Text(
+                        card.title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WeComposeTheme.colors.textPrimary
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Text("类型：${card.type}", fontSize = 14.sp, color = WeComposeTheme.colors.textSecondary)
-                    Text("截止：${card.deadline ?: "无"}", fontSize = 14.sp, color = WeComposeTheme.colors.textSecondary)
-                    Text("状态：${if(card.done) "已完成" else "未完成"}", fontSize = 14.sp, color = if(card.done) WeComposeTheme.colors.meList else WeComposeTheme.colors.redletter)
+                    Text(
+                        "类型：${card.type}",
+                        fontSize = 14.sp,
+                        color = WeComposeTheme.colors.textSecondary
+                    )
+                    Text(
+                        "截止：${card.deadline ?: "无"}",
+                        fontSize = 14.sp,
+                        color = WeComposeTheme.colors.textSecondary
+                    )
+                    Text(
+                        "状态：${if (card.done) "已完成" else "未完成"}",
+                        fontSize = 14.sp,
+                        color = if (card.done) WeComposeTheme.colors.meList else WeComposeTheme.colors.redletter
+                    )
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text("描述内容", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WeComposeTheme.colors.textPrimary)
+            Text(
+                "描述内容",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = WeComposeTheme.colors.textPrimary
+            )
             Spacer(Modifier.height(8.dp))
             Text(card.description, fontSize = 16.sp, color = WeComposeTheme.colors.textPrimary)
+            // 底下空白占位
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+            // 新增：保存到待办按钮
+            Button(
+                onClick = { onSaveClick(card)
+                    Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("保存到待办")
+            }
         }
     }
 }

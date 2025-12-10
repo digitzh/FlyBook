@@ -1,5 +1,6 @@
 package com.bytedance.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bytedance.entity.Conversation;
 import com.bytedance.entity.ConversationMember;
@@ -14,6 +15,10 @@ import com.bytedance.usecase.conversation.GetConversationListUseCase;
 import com.bytedance.vo.ConversationVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.bytedance.utils.RedisUtils;
+import cn.hutool.json.JSONUtil; // 引入 Hutool JSON 工具
+import java.util.concurrent.TimeUnit;
 
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +53,9 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         this.conversationMemberRepository = conversationMemberRepository;
         this.conversationMemberMapper = conversationMemberMapper;
     }
+
+    @Autowired
+    private RedisUtils redisUtils; // 【注入 Redis 工具类】
 
     @Override
     public long createConversation(String name, Integer type, Long ownerId) {
@@ -108,5 +116,17 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Override
     public void clearAllUnreadCount(Long userId) {
         conversationMemberMapper.clearAllUnreadCount(userId);
+    }
+
+    @Override
+    public void setConversationTop(Long conversationId, Long userId, boolean isTop) {
+        // 使用 MyBatis-Plus 的 UpdateWrapper 直接更新字段
+        // update conversation_member set is_top = ? where conversation_id = ? and user_id = ?
+        conversationMemberMapper.update(null,
+                new LambdaUpdateWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConversationId, conversationId)
+                        .eq(ConversationMember::getUserId, userId)
+                        .set(ConversationMember::getIsTop, isTop) // 更新 isTop 字段
+        );
     }
 }

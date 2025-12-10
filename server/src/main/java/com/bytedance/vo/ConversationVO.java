@@ -21,4 +21,6 @@ public class ConversationVO {
     private LocalDateTime lastMsgTime; // 最后一条消息时间
 
     private Integer unreadCount;   // 未读数红点
+
+    private Boolean isTop;
 }

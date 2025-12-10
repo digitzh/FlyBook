@@ -7,7 +7,13 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/flybook?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 020916
+    password: root
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    database: 0
+    timeout: 3000ms
 jackson:
   default-property-inclusion: non_null
 
@@ -29,11 +35,11 @@ jwt:
 
 # 认证配置
 auth:
-  enabled: false  # 是否启用登录系统，设置为 false 时关闭登录验证，请求中附带 userId 即可
+  enabled: false
 
 # 本地存储配置
 storage:
-  upload-path: D:/Sync/Codes/11-2025/FlyBook_env/FlyBook/imgs/
+  upload-path: D:/FlyBook/imgs/
   # 映射的访问前缀，即 http://localhost:8080/files/...
   access-prefix: /files/
   # 当前后端服务的地址，用于拼接完整URL

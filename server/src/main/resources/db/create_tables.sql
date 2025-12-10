@@ -8,7 +8,7 @@ create table conversation_members
     unread_count    int       default 0                 null comment '未读消息数',
     role            tinyint   default 1                 null comment '角色: 1=成员, 2=管理员',
     is_muted        tinyint   default 0                 null comment '免打扰',
-    is_pinned       tinyint   default 0                 null comment '是否置顶',
+    is_top          tinyint   default 0                 null comment '是否置顶',
     joined_time     timestamp default CURRENT_TIMESTAMP null,
     constraint uk_conv_user
         unique (conversation_id, user_id)

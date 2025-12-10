@@ -28,6 +28,8 @@ fun CreateConversationDialog(
     onDismiss: () -> Unit,
     onCreateConversation: (String, List<Long>, Int) -> Unit
 ) {
+    // 会话类型：1=单聊，2=群聊
+    var conversationType by remember { mutableStateOf(2) }
     var conversationName by remember { mutableStateOf("") }
     var isNameModified by remember { mutableStateOf(false) }
 
@@ -51,19 +53,39 @@ fun CreateConversationDialog(
         }
     }
 
-    // 自动命名逻辑：拼接所有选中成员的名字
-    LaunchedEffect(selectedUserIds) {
-        if (!isNameModified) {
-            // 找到所有选中的用户（按列表顺序）
-            val selectedNames = sortedUsers
-                .filter { selectedUserIds.contains(it.userId) }
-                .map { it.username }
-
-            if (selectedNames.isNotEmpty()) {
-                conversationName = selectedNames.joinToString("、")
+    // 根据会话类型自动命名逻辑
+    LaunchedEffect(selectedUserIds, conversationType) {
+        if (!isNameModified || conversationType == 1) {
+            if (conversationType == 1) {
+                // 单聊：只使用对方用户名
+                val otherUser = sortedUsers.find { 
+                    selectedUserIds.contains(it.userId) && it.userId != currentUserId 
+                }
+                conversationName = otherUser?.username ?: ""
             } else {
-                conversationName = ""
+                // 群聊：拼接所有选中成员的名字
+                val selectedNames = sortedUsers
+                    .filter { selectedUserIds.contains(it.userId) }
+                    .map { it.username }
+
+                if (selectedNames.isNotEmpty()) {
+                    conversationName = selectedNames.joinToString("、")
+                } else {
+                    conversationName = ""
+                }
             }
+        }
+    }
+
+    // 当切换会话类型时，重置选择状态
+    LaunchedEffect(conversationType) {
+        if (conversationType == 1) {
+            // 单聊：清空选择，只保留自己
+            selectedUserIds = if (currentUserId != null) setOf(currentUserId) else emptySet()
+            isNameModified = false
+        } else {
+            // 群聊：保持当前选择
+            isNameModified = false
         }
     }
 
@@ -79,7 +101,7 @@ fun CreateConversationDialog(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "创建群聊",
+                text = if (conversationType == 1) "创建单聊" else "创建群聊",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = WeComposeTheme.colors.textPrimary
@@ -87,26 +109,75 @@ fun CreateConversationDialog(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // 会话类型选择器
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 单聊选项
+                Button(
+                    onClick = { conversationType = 1 },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (conversationType == 1) 
+                            WeComposeTheme.colors.meList 
+                        else 
+                            WeComposeTheme.colors.textSecondary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("单聊", fontSize = 14.sp)
+                }
+                // 群聊选项
+                Button(
+                    onClick = { conversationType = 2 },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (conversationType == 2) 
+                            WeComposeTheme.colors.meList 
+                        else 
+                            WeComposeTheme.colors.textSecondary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("群聊", fontSize = 14.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // 会话名称输入框
             OutlinedTextField(
                 value = conversationName,
                 onValueChange = {
-                    conversationName = it
-                    isNameModified = true
+                    if (conversationType == 2) {
+                        // 群聊：允许编辑
+                        conversationName = it
+                        isNameModified = true
+                    }
+                    // 单聊：不允许编辑（锁定）
                 },
-                label = { Text("群聊名称", color = WeComposeTheme.colors.meList) },
+                label = { 
+                    Text(
+                        if (conversationType == 1) "会话名称" else "群聊名称", 
+                        color = WeComposeTheme.colors.meList
+                    ) 
+                },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = conversationType == 2, // 单聊时禁用编辑
                 shape = RoundedCornerShape(12.dp),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = WeComposeTheme.colors.textPrimary,
-                    unfocusedTextColor = WeComposeTheme.colors.textSecondary
+                    unfocusedTextColor = WeComposeTheme.colors.textSecondary,
+                    disabledTextColor = WeComposeTheme.colors.textPrimary,
+                    disabledLabelColor = WeComposeTheme.colors.textSecondary
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "选择成员",
+                text = if (conversationType == 1) "选择联系人" else "选择成员",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = WeComposeTheme.colors.textPrimary,
@@ -127,16 +198,39 @@ fun CreateConversationDialog(
             ) {
                 items(sortedUsers) { user ->
                     val isCurrentUser = user.userId == currentUserId
+                    // 单聊时，如果已选择了一个其他用户，则禁用其他用户的选择
+                    val isDisabled = if (conversationType == 1) {
+                        isCurrentUser || (!isCurrentUser && selectedUserIds.count { it != currentUserId } >= 1 && !selectedUserIds.contains(user.userId))
+                    } else {
+                        isCurrentUser
+                    }
+                    
                     UserSelectItem(
                         user = user,
                         isSelected = selectedUserIds.contains(user.userId),
-                        isDisabled = isCurrentUser,
+                        isDisabled = isDisabled,
                         onToggle = {
                             if (!isCurrentUser) {
-                                selectedUserIds = if (selectedUserIds.contains(user.userId)) {
-                                    selectedUserIds - user.userId
+                                if (conversationType == 1) {
+                                    // 单聊：只能选择一个用户，切换选择
+                                    if (selectedUserIds.contains(user.userId)) {
+                                        // 取消选择
+                                        selectedUserIds = if (currentUserId != null) setOf(currentUserId) else emptySet()
+                                    } else {
+                                        // 选择新用户，先清除之前的选择（除了自己）
+                                        selectedUserIds = if (currentUserId != null) {
+                                            setOf(currentUserId, user.userId)
+                                        } else {
+                                            setOf(user.userId)
+                                        }
+                                    }
                                 } else {
-                                    selectedUserIds + user.userId
+                                    // 群聊：多选
+                                    selectedUserIds = if (selectedUserIds.contains(user.userId)) {
+                                        selectedUserIds - user.userId
+                                    } else {
+                                        selectedUserIds + user.userId
+                                    }
                                 }
                             }
                         }
@@ -163,13 +257,13 @@ fun CreateConversationDialog(
 
                 Button(
                     onClick = {
-                        // 【修改】强制使用 Type=2 (群聊)
-                        val type = 2
+                        val type = conversationType // 使用选择的类型：1=单聊，2=群聊
                         onCreateConversation(conversationName, selectedUserIds.toList(), type)
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = conversationName.isNotBlank() && selectedUserIds.isNotEmpty(),
+                    enabled = conversationName.isNotBlank() && selectedUserIds.isNotEmpty() && 
+                              (conversationType == 2 || selectedUserIds.count { it != currentUserId } == 1),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WeComposeTheme.colors.meList
                     ),

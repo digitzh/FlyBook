@@ -50,25 +50,44 @@ public class AddMembersUseCase {
         if (conversation == null) {
             throw new RuntimeException("会话不存在");
         }
-        if (conversation.getType() == 1) {
-            throw new RuntimeException("单聊不能直接加人，请创建新群");
+
+        // 【优化点 1】: 这里先不判断人数，等下面过滤完去重后再判断，更严谨
+        // 只是简单校验一下入参不为空
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            return;
         }
 
         // 2. 过滤掉已经在群里的人 (去重)
         List<ConversationMember> existingMembers = conversationMemberRepository
                 .findByConversationId(conversationId);
+
         Set<Long> existingUserIds = existingMembers.stream()
                 .map(ConversationMember::getUserId)
                 .collect(Collectors.toSet());
 
+        // 计算出真正需要插入的有效用户 ID
         List<Long> effectiveUserIds = targetUserIds.stream()
-                .distinct()
-                .filter(uid -> !existingUserIds.contains(uid))
+                .distinct() // 去掉入参里的重复值 (比如前端传了两次 id:3)
+                .filter(uid -> !existingUserIds.contains(uid)) // 去掉已经在群里的人
                 .collect(Collectors.toList());
 
         if (effectiveUserIds.isEmpty()) {
             return; // 都在群里了，无需操作
         }
+
+        // ========================================================
+        // 【核心修改】: 校验单聊人数限制 (现有 + 新增 > 2 则报错)
+        // ========================================================
+        if (conversation.getType() == 1) {
+            int currentCount = existingMembers.size(); // 数据库里已有的
+            int addCount = effectiveUserIds.size();    // 即将插入的
+
+            if (currentCount + addCount > 2) {
+                // 提示语可以根据产品需求调整，比如提示"请创建新的群聊"
+                throw new RuntimeException("单聊人数限制为 2 人，无法继续添加成员");
+            }
+        }
+        // ========================================================
 
         // 3. 批量插入成员
         List<ConversationMember> newMembers = new ArrayList<>();
@@ -76,7 +95,7 @@ public class AddMembersUseCase {
             ConversationMember member = ConversationMember.builder()
                     .conversationId(conversationId)
                     .userId(userId)
-                    .role(0) // 普通成员
+                    .role(0)
                     .unreadCount(0)
                     .joinedTime(LocalDateTime.now())
                     .build();
@@ -84,16 +103,18 @@ public class AddMembersUseCase {
         }
         conversationMemberRepository.saveBatch(newMembers);
 
-        // 4. 发送一条系统通知消息
-        User inviter = userRepository.findById(inviterId);
-        List<User> newUsers = userRepository.findByIds(effectiveUserIds);
-        String joinedNames = newUsers.stream()
-                .map(User::getUsername)
-                .collect(Collectors.joining("、"));
+        // 4. 发送一条系统通知消息 群聊发信息，单聊不发信息。
+        if (conversation.getType() == 2) {
+            User inviter = userRepository.findById(inviterId);
+            List<User> newUsers = userRepository.findByIds(effectiveUserIds);
+            String joinedNames = newUsers.stream()
+                    .map(User::getUsername)
+                    .collect(Collectors.joining("、"));
 
-        String content = String.format("%s 邀请 %s 加入了群聊", inviter.getUsername(), joinedNames);
-        sendMessageUseCase.execute(conversationId, inviterId, 1, 
-                "{\"text\":\"" + content + "\"}");
+            String content = String.format("%s 邀请 %s 加入了群聊", inviter.getUsername(), joinedNames);
+            sendMessageUseCase.execute(conversationId, inviterId, 1,
+                    "{\"text\":\"" + content + "\"}");
+        }
     }
 }
 

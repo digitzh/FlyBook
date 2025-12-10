@@ -33,7 +33,6 @@ public class ConversationMember {
 
     private Integer role;
     private Integer isMuted;
-    private Integer isPinned;
 
     private Boolean isTop;
 

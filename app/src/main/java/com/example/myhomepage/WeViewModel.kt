@@ -58,6 +58,9 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
 
   // 【新增】暂存当前要预览的图片数据
   var currentPreviewImageBase64 by mutableStateOf<String?>(null)
+  
+  // 【新增】跟踪当前正在查看的会话ID，用于判断是否需要增加未读数
+  var currentViewingConversationId by mutableStateOf<Long?>(null)
 
   init {
     viewModelScope.launch {
@@ -161,6 +164,8 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
 
       val chat = chats.find { it.conversationId == conversationId }
       chat?.msgs?.add(Msg(User.Me, content, timeStr, type = msgType).apply { read = true })
+      // 【临时修复】用户发送消息后，清除该会话的未读数
+      chat?.unreadCount = 0
     }
   }
 
@@ -352,7 +357,10 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
             else -> realContent
           }
           chat.lastTime = timeStr
-          if (wsMsg.senderId.toString() != currentUserId) chat.unreadCount++
+          // 只有在用户不在查看该会话页面时，才增加未读数
+          if (wsMsg.senderId.toString() != currentUserId && currentViewingConversationId != wsMsg.conversationId) {
+            chat.unreadCount++
+          }
 
           val isDuplicate = wsMsg.senderId.toString() == currentUserId && chat.msgs.lastOrNull()?.text == realContent
           if (!isDuplicate) {

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +67,17 @@ fun ChatDetailsPage(
         return
     }
 
+    // 跟踪页面生命周期：进入时设置当前查看的会话ID，离开时清除
+    DisposableEffect(chat.conversationId) {
+        chat.conversationId?.let { cid ->
+            viewModel.currentViewingConversationId = cid
+        }
+        onDispose {
+            // 离开页面时清除当前查看的会话ID
+            viewModel.currentViewingConversationId = null
+        }
+    }
+    
     LaunchedEffect(chat.conversationId) {
         chat.conversationId?.let { cid ->
             viewModel.syncChatHistory(cid)

@@ -59,7 +59,22 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     public long createConversation(String name, Integer type, Long ownerId) {
-        return createConversationUseCase.execute(name, type, ownerId);
+        // 使用分布式锁防止并发创建相同会话
+        String lockKey = "lock:conversation:create:" + name + ":" + type + ":" + ownerId;
+        String lockValue = java.util.UUID.randomUUID().toString();
+        
+        try {
+            // 尝试获取锁，超时时间5秒
+            boolean lockAcquired = redisUtils.tryLock(lockKey, lockValue, 5);
+            if (!lockAcquired) {
+                throw new RuntimeException("系统繁忙，请稍后重试");
+            }
+            
+            return createConversationUseCase.execute(name, type, ownerId);
+        } finally {
+            // 释放锁
+            redisUtils.releaseLock(lockKey, lockValue);
+        }
     }
 
     @Override
@@ -79,33 +94,59 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
             return null;
         }
 
-        // 1. 根据群名和类型查询所有群聊
-        List<Conversation> conversations = conversationRepository.findByNameAndType(name, type);
-        if (conversations.isEmpty()) {
+        // 【新增】使用分布式锁保证查询和创建的原子性
+        // 构建锁的key：基于群名、类型和成员列表的排序hash
+        List<Long> sortedMemberIds = new java.util.ArrayList<>(memberIds);
+        sortedMemberIds.sort(Long::compareTo);
+        String memberHash = sortedMemberIds.toString();
+        String lockKey = "lock:conversation:find:" + name + ":" + type + ":" + memberHash.hashCode();
+        String lockValue = java.util.UUID.randomUUID().toString();
+
+        try {
+            // 尝试获取锁，超时时间3秒
+            boolean lockAcquired = redisUtils.tryLock(lockKey, lockValue, 3);
+            if (!lockAcquired) {
+                // 如果获取锁失败，等待一小段时间后重试
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            // 1. 根据群名和类型查询所有群聊
+            List<Conversation> conversations = conversationRepository.findByNameAndType(name, type);
+            if (conversations.isEmpty()) {
+                return null;
+            }
+
+            // 2. 将目标成员列表转换为 Set（去重并便于比较）
+            Set<Long> targetMemberSet = new HashSet<>(memberIds);
+
+            // 3. 遍历每个群聊，检查成员列表是否完全一致
+            for (Conversation conversation : conversations) {
+                List<ConversationMember> members = conversationMemberRepository
+                        .findByConversationId(conversation.getConversationId());
+                
+                // 提取成员ID集合
+                Set<Long> existingMemberSet = members.stream()
+                        .map(ConversationMember::getUserId)
+                        .collect(Collectors.toSet());
+
+                // 比较两个集合是否完全一致（大小相同且包含所有元素）
+                if (targetMemberSet.size() == existingMemberSet.size() 
+                        && targetMemberSet.containsAll(existingMemberSet)) {
+                    return conversation.getConversationId();
+                }
+            }
+
             return null;
-        }
-
-        // 2. 将目标成员列表转换为 Set（去重并便于比较）
-        Set<Long> targetMemberSet = new HashSet<>(memberIds);
-
-        // 3. 遍历每个群聊，检查成员列表是否完全一致
-        for (Conversation conversation : conversations) {
-            List<ConversationMember> members = conversationMemberRepository
-                    .findByConversationId(conversation.getConversationId());
-            
-            // 提取成员ID集合
-            Set<Long> existingMemberSet = members.stream()
-                    .map(ConversationMember::getUserId)
-                    .collect(Collectors.toSet());
-
-            // 比较两个集合是否完全一致（大小相同且包含所有元素）
-            if (targetMemberSet.size() == existingMemberSet.size() 
-                    && targetMemberSet.containsAll(existingMemberSet)) {
-                return conversation.getConversationId();
+        } finally {
+            // 释放锁
+            if (lockValue != null) {
+                redisUtils.releaseLock(lockKey, lockValue);
             }
         }
-
-        return null;
     }
 
     @Override

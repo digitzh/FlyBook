@@ -78,16 +78,6 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
 
   var chats by mutableStateOf(listOf<Chat>())
 
-  val initbacklogList by mutableStateOf(listOf(
-    Backlog(-1L, "周报", "完成周报", "2025-12-03", TodoType.FILE),
-    Backlog(-2L, "接口设计文档", "完成接口设计文档", "2025-12-05", TodoType.FILE),
-    Backlog(-3L, "数据分析表", "完成数据分析表", "2025-12-08", TodoType.FILE),
-    Backlog(-4L, "下午2点开会", "项目讨论", "2025-12-01", TodoType.CONF),
-    Backlog(-5L, "下午2点开会", "项目讨论", "2025-12-02", TodoType.CONF),
-    Backlog(-6L, "原神启动", "原神启动！！！", "2025-12-01", TodoType.OTHER),
-    Backlog(-7L, "原神启动", "原神启动！！！", "2025-12-02", TodoType.OTHER),
-  ))
-
   fun switchTheme() {
     theme = when (theme) {
       WeComposeTheme.Theme.Light -> WeComposeTheme.Theme.Dark;
@@ -238,7 +228,12 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     chat.msgs.clear()
     dbMessages.forEach { entity ->
       val senderUser = if (entity.senderId.toString() == currentUserId) User.Me else {
-        User(entity.senderId.toString(), getNameForUser(entity.senderId), getAvatarForUser(entity.senderId))
+        val userEntity = userDao.getUserById(entity.senderId)
+        User(
+          entity.senderId.toString(),
+          userEntity?.username ?: "用户${entity.senderId}",
+          R.drawable.avatar_me
+        )
       }
       chat.msgs.add(Msg(senderUser, entity.content, entity.time, type = entity.msgType).apply { read = true })
     }
@@ -271,15 +266,23 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   private suspend fun convertConversationVOToChat(vo: ConversationVO): Chat {
-    val friend = if (vo.type == 2) User("group_${vo.conversationId}", vo.name ?: "群聊", R.drawable.avatar_me) else {
-      val friendIdLong = if (vo.name == "ZhangSan") 1001L else if (vo.name == "LiSi") 1002L else 0L
-      User("user_${vo.conversationId}", vo.name ?: "用户", getAvatarForUser(friendIdLong))
+    val friend = if (vo.type == 2) {
+      User("group_${vo.conversationId}", vo.name ?: "群聊", R.drawable.avatar_me)
+    } else {
+      // 对于单聊，尝试从数据库获取用户信息
+      // 注意：这里需要知道对方的userId，但ConversationVO可能不包含，所以使用默认值
+      User("user_${vo.conversationId}", vo.name ?: "用户", R.drawable.avatar_me)
     }
     val dbMessages = messageDao.getMessagesByConversationId(vo.conversationId)
     val msgs = mutableStateListOf<Msg>()
     dbMessages.forEach { entity ->
       val senderUser = if (entity.senderId.toString() == currentUserId) User.Me else {
-        User(entity.senderId.toString(), getNameForUser(entity.senderId), getAvatarForUser(entity.senderId))
+        val userEntity = userDao.getUserById(entity.senderId)
+        User(
+          entity.senderId.toString(),
+          userEntity?.username ?: "用户${entity.senderId}",
+          R.drawable.avatar_me
+        )
       }
       msgs.add(Msg(senderUser, entity.content, entity.time, type = entity.msgType).apply { read = true })
     }
@@ -316,55 +319,62 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   private fun handleWebSocketMessage(jsonStr: String) {
-    try {
-      val parser = Json { ignoreUnknownKeys = true }
-      val wsMsg = parser.decodeFromString<WsMessage>(jsonStr)
-      val chat = chats.find { it.conversationId == wsMsg.conversationId }
+    viewModelScope.launch {
+      try {
+        val parser = Json { ignoreUnknownKeys = true }
+        val wsMsg = parser.decodeFromString<WsMessage>(jsonStr)
+        val chat = chats.find { it.conversationId == wsMsg.conversationId }
 
-      val realContent = try {
-        parser.decodeFromString<WsContent>(wsMsg.content).text
-      } catch (e: Exception) {
-        wsMsg.content
-      }
-
-      val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(wsMsg.createdTime))
-
-      val entity = MessageEntity(
-        msgId = wsMsg.messageId,
-        conversationId = wsMsg.conversationId,
-        senderId = wsMsg.senderId,
-        content = realContent,
-        time = timeStr,
-        timestamp = wsMsg.createdTime,
-        msgType = wsMsg.msgType
-      )
-      viewModelScope.launch { messageDao.insertMessage(entity) }
-
-      if (chat != null) {
-        chat.lastContent = when(wsMsg.msgType) {
-          2 -> "[图片]"
-          3 -> "[视频]"
-          5 -> "[待办事项]"
-          else -> realContent
+        val realContent = try {
+          parser.decodeFromString<WsContent>(wsMsg.content).text
+        } catch (e: Exception) {
+          wsMsg.content
         }
-        chat.lastTime = timeStr
-        if (wsMsg.senderId.toString() != currentUserId) chat.unreadCount++
 
-        val isDuplicate = wsMsg.senderId.toString() == currentUserId && chat.msgs.lastOrNull()?.text == realContent
-        if (!isDuplicate) {
-          val senderUser = if (wsMsg.senderId.toString() == currentUserId) User.Me else {
-            User(wsMsg.senderId.toString(), getNameForUser(wsMsg.senderId), getAvatarForUser(wsMsg.senderId))
+        val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(wsMsg.createdTime))
+
+        val entity = MessageEntity(
+          msgId = wsMsg.messageId,
+          conversationId = wsMsg.conversationId,
+          senderId = wsMsg.senderId,
+          content = realContent,
+          time = timeStr,
+          timestamp = wsMsg.createdTime,
+          msgType = wsMsg.msgType
+        )
+        messageDao.insertMessage(entity)
+
+        if (chat != null) {
+          chat.lastContent = when(wsMsg.msgType) {
+            2 -> "[图片]"
+            3 -> "[视频]"
+            5 -> "[待办事项]"
+            else -> realContent
           }
-          chat.msgs.add(Msg(senderUser, realContent, timeStr, type = wsMsg.msgType).apply { read = true })
+          chat.lastTime = timeStr
+          if (wsMsg.senderId.toString() != currentUserId) chat.unreadCount++
+
+          val isDuplicate = wsMsg.senderId.toString() == currentUserId && chat.msgs.lastOrNull()?.text == realContent
+          if (!isDuplicate) {
+            val senderUser = if (wsMsg.senderId.toString() == currentUserId) {
+              User.Me
+            } else {
+              val userEntity = userDao.getUserById(wsMsg.senderId)
+              User(
+                wsMsg.senderId.toString(),
+                userEntity?.username ?: "用户${wsMsg.senderId}",
+                R.drawable.avatar_me
+              )
+            }
+            chat.msgs.add(Msg(senderUser, realContent, timeStr, type = wsMsg.msgType).apply { read = true })
+          }
+        } else {
+          refreshConversationList()
         }
-      } else {
-        refreshConversationList()
+      } catch (e: Exception) {
+        android.util.Log.e("WeViewModel", "WS Error", e)
       }
-    } catch (e: Exception) {
-      android.util.Log.e("WeViewModel", "WS Error", e)
     }
   }
 
-  private fun getAvatarForUser(userId: Long) = when (userId) { 1001L -> R.drawable.avatar_zhangsan; 1002L -> R.drawable.avatar_lisi; else -> R.drawable.avatar_me }
-  private fun getNameForUser(userId: Long) = when (userId) { 1001L -> "ZhangSan"; 1002L -> "LiSi"; else -> "User $userId" }
 }

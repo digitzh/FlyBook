@@ -37,23 +37,8 @@ abstract class AppDatabase : RoomDatabase() {
         private class DatabaseCallback : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                INSTANCE?.let { database ->
-                    CoroutineScope(Dispatchers.IO).launch {
-                        populateDatabase(database.userDao())
-                    }
-                }
+                // 用户数据将从服务端同步，不再需要硬编码初始化
             }
-        }
-
-        suspend fun populateDatabase(userDao: UserDao) {
-            val users = listOf(
-                UserEntity(1001, "ZhangSan", "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang"),
-                UserEntity(1002, "LiSi", "https://api.dicebear.com/7.x/avataaars/svg?seed=Li"),
-                UserEntity(1003, "WangWu", "https://api.dicebear.com/7.x/avataaars/svg?seed=Wang"),
-                UserEntity(1004, "ZhaoLiu", "https://api.dicebear.com/7.x/avataaars/svg?seed=Zhao"),
-                UserEntity(1005, "TianQi", "https://api.dicebear.com/7.x/avataaars/svg?seed=Tian")
-            )
-            userDao.insertUsers(users)
         }
     }
 }

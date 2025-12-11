@@ -109,10 +109,11 @@ fun ChatDetailsPage(
                 items(chat.msgs.size) { index ->
                     val msg = chat.msgs[index]
                     msg.apply { read = true }
-                    // 【修改】传入 onImageClick
+                    // 【修改】传入 onImageClick 和 isGroupChat
                     MessageItem(
                         msg, shakingTime, chat.msgs.size - index - 1,
                         onTodoCardClick,
+                        isGroupChat = chat.isGroupChat,
                         onImageClick = { base64 ->
                             viewModel.currentPreviewImageBase64 = base64
                             onImageClick()
@@ -205,6 +206,7 @@ fun MessageItem(
     shakingTime: Int,
     shakingLevel: Int,
     onTodoCardClick: (TodoShareCard) -> Unit = {},
+    isGroupChat: Boolean = false,
     onImageClick: (String) -> Unit = {}
 ) {
     val shakingAngleBubble = remember { Animatable(0f) }
@@ -212,11 +214,22 @@ fun MessageItem(
     val alignment = if (isMe) Arrangement.End else Arrangement.Start
     val bubbleColor = if (isMe) WeComposeTheme.colors.bubbleMe else WeComposeTheme.colors.bubbleOthers
 
-    Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = alignment) {
-        if (!isMe) {
-            Image(painterResource(msg.from.avatar), null, Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)))
-            Spacer(Modifier.width(8.dp))
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+        // 【新增】群聊中显示发送者用户名
+        if (isGroupChat && !isMe) {
+            Text(
+                text = msg.from.name,
+                fontSize = 12.sp,
+                color = WeComposeTheme.colors.textSecondary,
+                modifier = Modifier.padding(start = 48.dp, bottom = 0.dp)
+            )
         }
+        
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = alignment) {
+            if (!isMe) {
+                Image(painterResource(msg.from.avatar), null, Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)))
+                Spacer(Modifier.width(8.dp))
+            }
 
         when (msg.type) {
             1 -> { // 文本
@@ -276,6 +289,7 @@ fun MessageItem(
         if (isMe) {
             Spacer(Modifier.width(8.dp))
             Image(painterResource(msg.from.avatar), null, Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)))
+        }
         }
     }
 }

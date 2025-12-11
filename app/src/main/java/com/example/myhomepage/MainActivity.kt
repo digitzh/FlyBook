@@ -164,6 +164,7 @@ class MainActivity : ComponentActivity() {
                     composable<Login> {
                         LoginPage { userId ->
                             lifecycleScope.launch {
+                                // 我们现在通过 ownerId 进行数据隔离，不需要清库了
                                 viewModel.syncUsersFromServer()
                                 viewModel.setCurrentUserIdAndLoadUser(userId)
                                 WebSocketManager.getInstance().connect(userId)

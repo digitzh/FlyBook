@@ -10,8 +10,12 @@ data class MessageEntity(
     val msgId: Long,
     val conversationId: Long,
     val senderId: Long,
+
+    // 【新增】数据所有者ID (当前登录用户的ID)
+    val ownerId: Long,
+
     val content: String,
     val time: String,
     val timestamp: Long,
-    val msgType: Int = 1 // 【新增】消息类型：1=文本, 5=待办卡片
+    val msgType: Int = 1
 )

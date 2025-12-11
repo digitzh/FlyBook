@@ -129,4 +129,54 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                         .set(ConversationMember::getIsTop, isTop) // 更新 isTop 字段
         );
     }
+
+    @Override
+    public void setConversationMuted(Long conversationId, Long userId, boolean isMuted) {
+        // 使用 MyBatis-Plus 的 UpdateWrapper 直接更新字段
+        // update conversation_member set is_muted = ? where conversation_id = ? and user_id = ?
+        conversationMemberMapper.update(null,
+                new LambdaUpdateWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConversationId, conversationId)
+                        .eq(ConversationMember::getUserId, userId)
+                        .set(ConversationMember::getIsMuted, isMuted ? 1 : 0) // 更新 isMuted 字段（Integer类型：1=开启，0=关闭）
+        );
+    }
+
+    @Override
+    public void setMemberRole(Long conversationId, Long operatorId, Long targetUserId, Integer role) {
+        // 1. 查询会话信息，验证操作者是否为群主
+        Conversation conversation = conversationRepository.findById(conversationId);
+        if (conversation == null) {
+            throw new RuntimeException("会话不存在");
+        }
+
+        // 2. 验证是否为群聊
+        if (conversation.getType() == null || conversation.getType() != 2) {
+            throw new RuntimeException("只有群聊可以设置管理员");
+        }
+
+        // 3. 验证操作者是否为群主
+        if (conversation.getOwnerId() == null || !conversation.getOwnerId().equals(operatorId)) {
+            throw new RuntimeException("只有群主可以设置管理员");
+        }
+
+        // 4. 验证目标用户是否为会话成员
+        ConversationMember targetMember = conversationMemberRepository.findByConversationIdAndUserId(conversationId, targetUserId);
+        if (targetMember == null) {
+            throw new RuntimeException("目标用户不是会话成员");
+        }
+
+        // 5. 验证角色值（1=成员, 2=管理员）
+        if (role == null || (role != 1 && role != 2)) {
+            throw new RuntimeException("角色值无效，必须是1（成员）或2（管理员）");
+        }
+
+        // 6. 更新角色
+        conversationMemberMapper.update(null,
+                new LambdaUpdateWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConversationId, conversationId)
+                        .eq(ConversationMember::getUserId, targetUserId)
+                        .set(ConversationMember::getRole, role)
+        );
+    }
 }

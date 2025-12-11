@@ -4,6 +4,8 @@ import cn.hutool.log.Log;
 import com.bytedance.dto.AddMemberRequest;
 import com.bytedance.dto.ConversationDTO;
 import com.bytedance.dto.TopRequest;
+import com.bytedance.dto.MutedRequest;
+import com.bytedance.dto.SetRoleRequest;
 import com.bytedance.utils.UserContext;
 import com.bytedance.vo.ConversationVO;
 import com.bytedance.common.Result;
@@ -132,10 +134,41 @@ public class ConversationController {
         return userId;
     }
 
+    /**
+     * 设置/取消会话置顶
+     * URL: POST /api/conversations/top
+     */
     @PostMapping("/top")
     public Result<String> setTop(@RequestBody TopRequest request) {
-        Long userId = UserContext.getUserId(); // 获取当前登录用户ID
+        Long userId = getUserId();
         conversationService.setConversationTop(request.getConversationId(), userId, request.getIsTop());
+        return Result.success("操作成功");
+    }
+
+    /**
+     * 设置/取消会话免打扰
+     * URL: POST /api/conversations/muted
+     */
+    @PostMapping("/muted")
+    public Result<String> setMuted(@RequestBody MutedRequest request) {
+        Long userId = getUserId();
+        conversationService.setConversationMuted(request.getConversationId(), userId, request.getIsMuted());
+        return Result.success("操作成功");
+    }
+
+    /**
+     * 设置成员角色（只有群主可以设置）
+     * URL: POST /api/conversations/members/role
+     */
+    @PostMapping("/members/role")
+    public Result<String> setMemberRole(@RequestBody SetRoleRequest request) {
+        Long operatorId = getUserId();
+        conversationService.setMemberRole(
+                request.getConversationId(),
+                operatorId,
+                request.getTargetUserId(),
+                request.getRole()
+        );
         return Result.success("操作成功");
     }
 }

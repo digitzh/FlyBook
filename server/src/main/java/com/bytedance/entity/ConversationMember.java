@@ -1,6 +1,7 @@
 package com.bytedance.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -32,8 +33,11 @@ public class ConversationMember {
     private Integer unreadCount = 0;
 
     private Integer role;
+    
+    @TableField("is_muted")
     private Integer isMuted;
 
+    @TableField("is_top")
     private Boolean isTop;
 
 

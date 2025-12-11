@@ -39,4 +39,22 @@ public interface IConversationService extends IService<Conversation> {
     void clearAllUnreadCount(Long userId);
 
     void setConversationTop(Long conversationId, Long userId, boolean isTop);
+
+    /**
+     * 设置/取消会话免打扰
+     * @param conversationId 会话ID
+     * @param userId 用户ID
+     * @param isMuted true=开启免打扰, false=取消免打扰
+     */
+    void setConversationMuted(Long conversationId, Long userId, boolean isMuted);
+
+    /**
+     * 设置成员角色（只有群主可以设置）
+     * @param conversationId 会话ID
+     * @param operatorId 操作者ID（必须是群主）
+     * @param targetUserId 目标用户ID
+     * @param role 角色：1=成员, 2=管理员
+     * @throws RuntimeException 如果操作者不是群主，抛出异常
+     */
+    void setMemberRole(Long conversationId, Long operatorId, Long targetUserId, Integer role);
 }

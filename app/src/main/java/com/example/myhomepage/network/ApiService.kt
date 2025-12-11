@@ -104,4 +104,20 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
             } else emptyList()
         } catch (e: Exception) { emptyList() }
     }
+
+    suspend fun clearUnreadCount(userId: String, conversationId: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("$baseUrl/api/conversations/unread/clear?conversationId=$conversationId")
+                .post(okhttp3.RequestBody.create(jsonMediaType, ""))
+                .addHeader("X-User-Id", userId)
+                .build()
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string() ?: return@withContext false
+            if (response.isSuccessful) {
+                val apiResponse = json.decodeFromString<ApiResponse<JsonElement?>>(responseBody)
+                apiResponse.code == 0
+            } else false
+        } catch (e: Exception) { false }
+    }
 }

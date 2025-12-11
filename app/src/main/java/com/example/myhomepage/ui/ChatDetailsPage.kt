@@ -69,11 +69,9 @@ fun ChatDetailsPage(
     LaunchedEffect(chat.conversationId) {
         chat.conversationId?.let { cid ->
             viewModel.syncChatHistory(cid)
+            // 清除未读消息数
+            viewModel.clearUnreadCount(cid)
         }
-    }
-
-    LaunchedEffect(Unit) {
-        chat.unreadCount = 0
     }
 
     var shakingTime by remember { mutableIntStateOf(0) }

@@ -220,6 +220,18 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
+  fun clearUnreadCount(conversationId: Long) {
+    val userId = currentUserId ?: return
+    viewModelScope.launch {
+      val success = apiService.clearUnreadCount(userId, conversationId)
+      if (success) {
+        // 更新本地未读数为0
+        val chat = chats.find { it.conversationId == conversationId }
+        chat?.unreadCount = 0
+      }
+    }
+  }
+
   private suspend fun reloadMessagesFromDb(conversationId: Long) {
     val chat = chats.find { it.conversationId == conversationId } ?: return
     val dbMessages = messageDao.getMessagesByConversationId(conversationId)

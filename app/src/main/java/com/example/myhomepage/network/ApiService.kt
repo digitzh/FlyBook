@@ -11,7 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-@Serializable data class CreateConversationRequest(val type: Int, val name: String)
+@Serializable data class CreateConversationRequest(val type: Int, val name: String, val targetUserIds: List<Long>? = null)
 @Serializable data class CreateConversationResponse(val code: Int = -1, val msg: String = "", val data: Long? = null)
 @Serializable data class AddMembersRequest(val conversationId: Long, val targetUserIds: List<Long>)
 @Serializable data class ApiResponse<T>(val code: Int = -1, val msg: String = "", val data: T? = null)
@@ -30,9 +30,9 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-    suspend fun createConversation(userId: String, type: Int, name: String): Long? = withContext(Dispatchers.IO) {
+    suspend fun createConversation(userId: String, type: Int, name: String, targetUserIds: List<Long>? = null): Long? = withContext(Dispatchers.IO) {
         try {
-            val requestBody = json.encodeToString(CreateConversationRequest(type, name)).toRequestBody(jsonMediaType)
+            val requestBody = json.encodeToString(CreateConversationRequest(type, name, targetUserIds)).toRequestBody(jsonMediaType)
             val request = Request.Builder().url("$baseUrl/api/conversations/create").post(requestBody).addHeader("X-User-Id", userId).build()
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string() ?: return@withContext null

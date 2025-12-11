@@ -298,10 +298,16 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     if (userId == null) { onError("用户未登录"); return }
     viewModelScope.launch {
       try {
-        val cid = apiService.createConversation(userId, type, name)
+        // 过滤掉当前用户，服务端期望targetUserIds不包括创建者
+        // 服务端会自己添加ownerId来构建完整列表，用于检查是否已存在相同会话
+        val targetUserIds = selectedUserIds.filter { it.toString() != userId }
+        
+        // 创建会话时传递成员列表（不包括创建者），服务端会检查是否存在相同群名和成员的会话
+        // 如果存在，服务端会返回已有会话ID；如果不存在，服务端会创建新会话并添加成员
+        val cid = apiService.createConversation(userId, type, name, targetUserIds)
         if (cid != null) {
-          val others = selectedUserIds.filter { it.toString() != userId }
-          if (others.isNotEmpty()) apiService.addMembersToConversation(userId, cid, others)
+          // 刷新会话列表，确保显示最新的会话信息
+          // refreshConversationList()会正确处理已存在的会话（更新而不是重复创建）
           refreshConversationList()
           onSuccess()
         } else onError("创建失败")

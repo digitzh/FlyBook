@@ -15,7 +15,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 @Serializable data class CreateConversationResponse(val code: Int = -1, val msg: String = "", val data: Long? = null)
 @Serializable data class AddMembersRequest(val conversationId: Long, val targetUserIds: List<Long>)
 @Serializable data class ApiResponse<T>(val code: Int = -1, val msg: String = "", val data: T? = null)
-@Serializable data class ConversationVO(val conversationId: Long, val type: Int, val name: String? = null, val avatarUrl: String? = null, val lastMsgContent: String? = null, val lastMsgTime: String? = null, val unreadCount: Int = 0)
+@Serializable data class ConversationVO(val conversationId: Long, val type: Int, val name: String? = null, val avatarUrl: String? = null, val lastMsgContent: String? = null, val lastMsgTime: String? = null, val unreadCount: Int = 0, val isTop: Boolean? = null)
+@Serializable data class TopRequest(val conversationId: Long, val isTop: Boolean)
 @Serializable data class SendMessageRequest(val conversationId: Long, val text: String, val msgType: Int = 1)
 @Serializable data class SendMessageData(val messageId: Long, val conversationId: Long, val senderId: Long, val seq: Long, val msgType: Int, val content: String, val createdTime: String)
 @Serializable data class MessageVO(val messageId: Long, val conversationId: Long, val senderId: Long, val content: String, val createdTime: String, val seq: Long, val msgType: Int = 1)
@@ -110,6 +111,23 @@ class ApiService(private val baseUrl: String = "http://10.0.2.2:8081") {
             val request = Request.Builder()
                 .url("$baseUrl/api/conversations/unread/clear?conversationId=$conversationId")
                 .post(okhttp3.RequestBody.create(jsonMediaType, ""))
+                .addHeader("X-User-Id", userId)
+                .build()
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string() ?: return@withContext false
+            if (response.isSuccessful) {
+                val apiResponse = json.decodeFromString<ApiResponse<JsonElement?>>(responseBody)
+                apiResponse.code == 0
+            } else false
+        } catch (e: Exception) { false }
+    }
+
+    suspend fun setConversationTop(userId: String, conversationId: Long, isTop: Boolean): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val requestBody = json.encodeToString(TopRequest(conversationId, isTop)).toRequestBody(jsonMediaType)
+            val request = Request.Builder()
+                .url("$baseUrl/api/conversations/top")
+                .post(requestBody)
                 .addHeader("X-User-Id", userId)
                 .build()
             val response = client.newCall(request).execute()

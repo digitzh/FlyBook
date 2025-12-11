@@ -16,6 +16,7 @@ class Chat(
     var lastContent: String? by mutableStateOf(null)
     var lastTime: String? by mutableStateOf(null)
     var unreadCount: Int by mutableIntStateOf(0)
+    var isTop: Boolean by mutableStateOf(false)
 
     val isGroupChat: Boolean get() = type == 2
     val displayName: String get() = if (isGroupChat && name != null) name!! else friend.name

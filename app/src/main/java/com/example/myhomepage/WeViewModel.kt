@@ -227,6 +227,26 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
     }
   }
 
+  fun setConversationTop(conversationId: Long, isTop: Boolean) {
+    val userId = currentUserId ?: return
+    viewModelScope.launch {
+      val success = apiService.setConversationTop(userId, conversationId, isTop)
+      if (success) {
+        // 更新本地置顶状态
+        val chat = chats.find { it.conversationId == conversationId }
+        chat?.isTop = isTop
+        // 重新排序会话列表
+        chats = chats.sortedWith { a, b ->
+          when {
+            a.isTop && !b.isTop -> -1
+            !a.isTop && b.isTop -> 1
+            else -> 0
+          }
+        }
+      }
+    }
+  }
+
   private suspend fun reloadMessagesFromDb(conversationId: Long) {
     val chat = chats.find { it.conversationId == conversationId } ?: return
     val dbMessages = messageDao.getMessagesByConversationId(conversationId)
@@ -257,12 +277,20 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
             existingChat.lastContent = vo.lastMsgContent
             existingChat.lastTime = vo.lastMsgTime
             existingChat.unreadCount = vo.unreadCount
+            existingChat.isTop = vo.isTop ?: false
             if (existingChat.msgs.isEmpty() && !vo.lastMsgContent.isNullOrBlank()) {
               existingChat.msgs.add(Msg(existingChat.friend, vo.lastMsgContent, vo.lastMsgTime?:"", type = 1).apply { read = vo.unreadCount == 0 })
             }
             existingChat
           } else {
             convertConversationVOToChat(vo)
+          }
+        }.sortedWith { a, b ->
+          // 置顶的会话排在前面
+          when {
+            a.isTop && !b.isTop -> -1
+            !a.isTop && b.isTop -> 1
+            else -> 0
           }
         }
         chats = newChats
@@ -298,6 +326,7 @@ class WeViewModel(application: Application) : AndroidViewModel(application) {
       lastContent = vo.lastMsgContent
       lastTime = vo.lastMsgTime
       unreadCount = vo.unreadCount
+      isTop = vo.isTop ?: false
     }
   }
 
